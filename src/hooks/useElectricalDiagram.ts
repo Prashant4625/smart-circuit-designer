@@ -3,18 +3,13 @@ import { Node, Edge } from 'reactflow';
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ValidationError } from '@/types/electrical';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+import { generateWiringDiagram } from '@/utils/wiringLogic';
 
 interface DiagramState {
   selectedComponents: string[];
   nodes: Node[];
   edges: Edge[];
 }
-
-const INITIAL_STATE: DiagramState = {
-  selectedComponents: [],
-  nodes: [],
-  edges: [],
-};
 
 export function useElectricalDiagram() {
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
@@ -67,6 +62,9 @@ export function useElectricalDiagram() {
     return errors;
   }, [selectedComponents]);
 
+  const hasErrors = validationErrors.length > 0;
+  const canGenerate = selectedComponents.length > 0;
+
   const toggleComponent = useCallback((componentId: string) => {
     setSelectedComponents(prev => {
       if (prev.includes(componentId)) {
@@ -85,6 +83,23 @@ export function useElectricalDiagram() {
       return prev;
     });
   }, []);
+
+  const generateDiagram = useCallback(() => {
+    if (hasErrors) return;
+    
+    const { nodes: newNodes, edges: newEdges } = generateWiringDiagram(selectedComponents);
+    setNodes(newNodes);
+    setEdges(newEdges);
+    setDiagramGenerated(true);
+  }, [selectedComponents, hasErrors]);
+
+  const autoArrange = useCallback(() => {
+    if (nodes.length === 0) return;
+    
+    const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents);
+    setNodes(arrangedNodes);
+    setEdges(arrangedEdges);
+  }, [selectedComponents, nodes.length]);
 
   const resetDiagram = useCallback(() => {
     setSelectedComponents([]);
@@ -105,18 +120,6 @@ export function useElectricalDiagram() {
     return url;
   }, [selectedComponents, nodes, edges]);
 
-  const updateNodes = useCallback((newNodes: Node[] | ((nodes: Node[]) => Node[])) => {
-    setNodes(newNodes);
-  }, []);
-
-  const updateEdges = useCallback((newEdges: Edge[] | ((edges: Edge[]) => Edge[])) => {
-    setEdges(newEdges);
-  }, []);
-
-  const setGenerated = useCallback((generated: boolean) => {
-    setDiagramGenerated(generated);
-  }, []);
-
   return {
     selectedComponents,
     nodes,
@@ -125,10 +128,13 @@ export function useElectricalDiagram() {
     diagramGenerated,
     toggleComponent,
     addRequiredComponent,
+    generateDiagram,
+    autoArrange,
     resetDiagram,
     generateShareableLink,
-    updateNodes,
-    updateEdges,
-    setGenerated,
+    setNodes,
+    setEdges,
+    hasErrors,
+    canGenerate,
   };
 }
