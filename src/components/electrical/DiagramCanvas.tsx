@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState, DragEvent } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -10,17 +10,19 @@ import ReactFlow, {
   NodeTypes,
   Panel,
   ReactFlowInstance,
+  Node,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { ElectricalNode } from './ElectricalNode';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
 
 interface DiagramCanvasProps {
-  nodes: any[];
+  nodes: Node[];
   edges: any[];
-  onNodesChange: (nodes: any[]) => void;
+  onNodesChange: (nodes: Node[]) => void;
   onEdgesChange: (edges: any[]) => void;
   reactFlowRef: React.MutableRefObject<ReactFlowInstance | null>;
+  onDropComponent?: (componentId: string, position: { x: number; y: number }) => void;
 }
 
 const nodeTypes: NodeTypes = {
@@ -38,9 +40,12 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onNodesChange: onNodesUpdate,
   onEdgesChange: onEdgesUpdate,
   reactFlowRef,
+  onDropComponent,
 }) => {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Sync with parent when nodes/edges change externally
   React.useEffect(() => {
@@ -93,8 +98,47 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     instance.fitView({ padding: 0.2 });
   }, [reactFlowRef]);
 
+  const onDragOver = useCallback((event: DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const onDrop = useCallback(
+    (event: DragEvent) => {
+      event.preventDefault();
+      setIsDragOver(false);
+
+      const componentId = event.dataTransfer.getData('application/electrical-component');
+      if (!componentId || !reactFlowRef.current || !reactFlowWrapper.current) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowRef.current.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      if (onDropComponent) {
+        onDropComponent(componentId, position);
+      }
+    },
+    [onDropComponent, reactFlowRef]
+  );
+
   return (
-    <div className="w-full h-full bg-background">
+    <div 
+      ref={reactFlowWrapper}
+      className={`w-full h-full bg-background transition-all duration-200 ${
+        isDragOver ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''
+      }`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -109,6 +153,10 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         defaultEdgeOptions={{
           type: 'smoothstep',
         }}
+        snapToGrid
+        snapGrid={[15, 15]}
+        deleteKeyCode={['Backspace', 'Delete']}
+        multiSelectionKeyCode={['Control', 'Meta']}
       >
         <Background color="#e5e7eb" gap={20} />
         <Controls className="bg-card border border-border rounded-lg" />
@@ -146,6 +194,24 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             </div>
           </div>
         </Panel>
+
+        {/* Instructions Panel */}
+        <Panel position="top-right" className="bg-card/90 backdrop-blur-sm p-3 rounded-lg border border-border shadow-lg max-w-xs">
+          <h4 className="text-xs font-semibold text-foreground mb-2">Quick Tips</h4>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            <li>• Drag components to reposition</li>
+            <li>• Connect terminals by clicking & dragging</li>
+            <li>• Press Delete to remove selected items</li>
+            <li>• Use scroll to zoom in/out</li>
+          </ul>
+        </Panel>
+
+        {/* Drop Zone Indicator */}
+        {isDragOver && (
+          <Panel position="bottom-right" className="bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg">
+            <span className="text-sm font-medium">Drop to add component</span>
+          </Panel>
+        )}
       </ReactFlow>
     </div>
   );

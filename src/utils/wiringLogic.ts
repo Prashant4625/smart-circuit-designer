@@ -6,6 +6,36 @@ interface WiringResult {
   edges: Edge[];
 }
 
+// Generate wiring for a new node added at a specific position
+export function generateAutoWiringForNewNode(
+  existingNodes: Node[],
+  existingEdges: Edge[],
+  newComponentId: string
+): Edge[] {
+  const newEdges: Edge[] = [...existingEdges];
+  const existingComponentIds = existingNodes.map(n => n.data.componentId);
+  
+  // Add automatic connections based on the new component
+  const hasDB = existingComponentIds.includes('distribution-board');
+  const hasSwitch = existingComponentIds.includes('switch');
+  const hasRegulator = existingComponentIds.includes('regulator');
+  
+  if (newComponentId === 'fan' && hasRegulator) {
+    // Connect regulator to fan
+    newEdges.push({
+      id: `reg-to-fan-${Date.now()}`,
+      source: 'regulator',
+      target: newComponentId,
+      sourceHandle: 'reg-out',
+      targetHandle: 'fan-l',
+      style: { stroke: WIRE_COLORS.live, strokeWidth: 3 },
+      animated: true,
+    });
+  }
+  
+  return newEdges;
+}
+
 export function generateWiringDiagram(selectedComponentIds: string[]): WiringResult {
   const nodes: Node[] = [];
   const edges: Edge[] = [];

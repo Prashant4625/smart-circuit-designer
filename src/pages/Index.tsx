@@ -1,9 +1,9 @@
-import React, { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, DragEvent } from 'react';
 import { ReactFlowInstance } from 'reactflow';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Wand2 } from 'lucide-react';
 import { useElectricalDiagram } from '@/hooks/useElectricalDiagram';
 import { ComponentSelectionPanel } from '@/components/electrical/ComponentSelectionPanel';
 import { DiagramCanvas } from '@/components/electrical/DiagramCanvas';
@@ -11,6 +11,7 @@ import { Toolbar } from '@/components/electrical/Toolbar';
 import { generateWiringExplanation } from '@/utils/wiringLogic';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ElectricalComponent } from '@/types/electrical';
 
 const Index = () => {
   const {
@@ -20,8 +21,10 @@ const Index = () => {
     validationErrors,
     toggleComponent,
     addRequiredComponent,
+    addComponentAtPosition,
     generateDiagram,
     autoArrange,
+    autoConnectWires,
     resetDiagram,
     generateShareableLink,
     setNodes,
@@ -33,6 +36,16 @@ const Index = () => {
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+
+  const handleDragStart = useCallback((event: DragEvent, component: ElectricalComponent) => {
+    event.dataTransfer.setData('application/electrical-component', component.id);
+    event.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const handleDropComponent = useCallback((componentId: string, position: { x: number; y: number }) => {
+    addComponentAtPosition(componentId, position);
+    toast.success(`Added ${componentId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`);
+  }, [addComponentAtPosition]);
 
   const handleExportPNG = useCallback(async () => {
     if (!canvasContainerRef.current) return;
@@ -114,6 +127,11 @@ const Index = () => {
   }, [selectedComponents]);
 
   const handleShare = useCallback(async () => {
+    if (nodes.length === 0) {
+      toast.error('Create a diagram first before sharing');
+      return;
+    }
+    
     const url = generateShareableLink();
     
     try {
@@ -129,7 +147,7 @@ const Index = () => {
       document.body.removeChild(textArea);
       toast.success('Shareable link copied to clipboard!');
     }
-  }, [generateShareableLink]);
+  }, [generateShareableLink, nodes.length]);
 
   const explanations = generateWiringExplanation(selectedComponents);
 
@@ -168,45 +186,71 @@ const Index = () => {
             validationErrors={validationErrors}
             onToggleComponent={toggleComponent}
             onAddRequired={addRequiredComponent}
+            onDragStart={handleDragStart}
           />
         </div>
 
         {/* Right Panel - Canvas & Explanation */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* Diagram Canvas */}
           <div 
             ref={canvasContainerRef}
             className="flex-1 relative"
           >
             {nodes.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/20">
                 <div className="text-center max-w-md p-8">
                   <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-4xl">🔌</span>
                   </div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">
-                    No Diagram Yet
+                    Start Your Diagram
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Select components from the left panel and click "Generate Diagram" 
-                    to create your wiring diagram with automatic connections.
+                    Choose one of the following methods to create your wiring diagram:
                   </p>
-                  <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
-                    <span className="px-2 py-1 bg-muted rounded">1. Select components</span>
-                    <span className="px-2 py-1 bg-muted rounded">2. Click Generate</span>
-                    <span className="px-2 py-1 bg-muted rounded">3. Drag to arrange</span>
-                    <span className="px-2 py-1 bg-muted rounded">4. Export or Share</span>
+                  <div className="space-y-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
+                      <span className="text-lg">1️⃣</span>
+                      <span><strong>Toggle Mode:</strong> Select components → Click "Generate Diagram"</span>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
+                      <span className="text-lg">2️⃣</span>
+                      <span><strong>Drag & Drop:</strong> Drag components directly onto the canvas</span>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
+                    <span className="px-2 py-1 bg-muted rounded">🔧 Auto-wiring</span>
+                    <span className="px-2 py-1 bg-muted rounded">📐 Drag to arrange</span>
+                    <span className="px-2 py-1 bg-muted rounded">📤 Export PNG/PDF</span>
+                    <span className="px-2 py-1 bg-muted rounded">🔗 Share links</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <DiagramCanvas
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={setNodes}
-                onEdgesChange={setEdges}
-                reactFlowRef={reactFlowRef}
-              />
+              <>
+                <DiagramCanvas
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={setNodes}
+                  onEdgesChange={setEdges}
+                  reactFlowRef={reactFlowRef}
+                  onDropComponent={handleDropComponent}
+                />
+                {/* Auto-Connect Button (shown when components exist but no connections) */}
+                {edges.length === 0 && (
+                  <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
+                    <Button 
+                      onClick={autoConnectWires}
+                      className="gap-2 shadow-lg animate-pulse"
+                      size="lg"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                      Auto-Connect Wires
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -221,6 +265,9 @@ const Index = () => {
                 <div className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   <span className="font-medium">Wiring Explanation</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({explanations.filter(l => l && !l.startsWith(' ')).length} tips)
+                  </span>
                 </div>
                 {showExplanation ? (
                   <ChevronDown className="w-4 h-4" />
