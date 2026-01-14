@@ -68,6 +68,12 @@ export function useElectricalDiagram() {
   const toggleComponent = useCallback((componentId: string) => {
     setSelectedComponents(prev => {
       if (prev.includes(componentId)) {
+        // Remove component and its node
+        setNodes(currentNodes => currentNodes.filter(n => n.data.componentId !== componentId));
+        // Remove edges connected to this component
+        setEdges(currentEdges => currentEdges.filter(e => 
+          !e.source.includes(componentId) && !e.target.includes(componentId)
+        ));
         return prev.filter(id => id !== componentId);
       }
       return [...prev, componentId];
@@ -83,6 +89,40 @@ export function useElectricalDiagram() {
       return prev;
     });
   }, []);
+
+  const addComponentAtPosition = useCallback((componentId: string, position: { x: number; y: number }) => {
+    // Check if component already exists
+    const existingNode = nodes.find(n => n.data.componentId === componentId);
+    if (existingNode) {
+      return; // Component already exists
+    }
+
+    const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
+    if (!component) return;
+
+    // Create new node
+    const newNode: Node = {
+      id: `${componentId}-${Date.now()}`,
+      type: 'electrical',
+      position,
+      data: {
+        componentId: component.id,
+        label: component.name,
+      },
+    };
+
+    setNodes(prev => [...prev, newNode]);
+    
+    // Add to selected components if not already
+    setSelectedComponents(prev => {
+      if (!prev.includes(componentId)) {
+        return [...prev, componentId];
+      }
+      return prev;
+    });
+
+    setDiagramGenerated(true);
+  }, [nodes]);
 
   const generateDiagram = useCallback(() => {
     if (hasErrors) return;
@@ -120,6 +160,14 @@ export function useElectricalDiagram() {
     return url;
   }, [selectedComponents, nodes, edges]);
 
+  // Auto-connect wires for existing components
+  const autoConnectWires = useCallback(() => {
+    if (nodes.length === 0) return;
+    
+    const { edges: newEdges } = generateWiringDiagram(selectedComponents);
+    setEdges(newEdges);
+  }, [selectedComponents, nodes.length]);
+
   return {
     selectedComponents,
     nodes,
@@ -128,8 +176,10 @@ export function useElectricalDiagram() {
     diagramGenerated,
     toggleComponent,
     addRequiredComponent,
+    addComponentAtPosition,
     generateDiagram,
     autoArrange,
+    autoConnectWires,
     resetDiagram,
     generateShareableLink,
     setNodes,
