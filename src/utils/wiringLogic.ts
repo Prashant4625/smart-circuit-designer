@@ -369,6 +369,7 @@ export function validateUserConnections(
   };
 }
 
+// Generate closed-loop circuit diagram layout like traditional circuit diagrams
 export function generateWiringDiagram(selectedComponentIds: string[]): WiringResult {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -378,42 +379,96 @@ export function generateWiringDiagram(selectedComponentIds: string[]): WiringRes
     .map(id => ELECTRICAL_COMPONENTS.find(c => c.id === id))
     .filter(Boolean);
 
-  // Position components by category - arranged for clear circuit flow
-  const categoryPositions = {
-    power: { x: 50, baseY: 100 },
-    backup: { x: 50, baseY: 400 },
-    control: { x: 350, baseY: 100 },
-    load: { x: 650, baseY: 100 },
-  };
+  if (selectedComponents.length === 0) {
+    return { nodes, edges };
+  }
 
-  const categoryCounters: Record<string, number> = {
-    power: 0,
-    backup: 0,
-    control: 0,
-    load: 0,
-  };
+  const hasMCB = selectedComponentIds.includes('mcb');
+  const hasDB = selectedComponentIds.includes('distribution-board');
+  const hasSwitch = selectedComponentIds.includes('switch');
+  const hasRegulator = selectedComponentIds.includes('regulator');
+  const hasFan = selectedComponentIds.includes('fan');
+  const hasInverter = selectedComponentIds.includes('inverter');
+  const hasBattery = selectedComponentIds.includes('battery');
 
-  // Create nodes for each selected component
+  // Layout for closed circuit visualization
+  // Power source at bottom-left, controls in middle-bottom, load at top
+  // This creates a visual "loop" like the reference image
+  
+  const layoutPositions: Record<string, { x: number; y: number }> = {};
+  
+  // Determine layout based on components
+  if (hasFan && hasSwitch && hasRegulator) {
+    // Fan circuit layout (like reference image)
+    // Fan at top center, Switch and Regulator at bottom, AC Supply implied through DB
+    layoutPositions['fan'] = { x: 350, y: 50 };
+    layoutPositions['switch'] = { x: 200, y: 350 };
+    layoutPositions['regulator'] = { x: 450, y: 350 };
+    layoutPositions['distribution-board'] = { x: 50, y: 350 };
+    layoutPositions['mcb'] = { x: 50, y: 200 };
+  } else {
+    // Generic layout - arrange in circuit flow pattern
+    let yOffset = 50;
+    let xPower = 50;
+    let xControl = 300;
+    let xLoad = 550;
+    let loadY = 50;
+    let controlY = 300;
+    let powerY = 300;
+    
+    // Position power components on bottom-left
+    if (hasMCB) {
+      layoutPositions['mcb'] = { x: xPower, y: powerY - 150 };
+    }
+    if (hasDB) {
+      layoutPositions['distribution-board'] = { x: xPower, y: powerY };
+    }
+    
+    // Position control components at bottom-center
+    let controlCount = 0;
+    if (hasSwitch) {
+      layoutPositions['switch'] = { x: xControl + controlCount * 180, y: controlY };
+      controlCount++;
+    }
+    if (hasRegulator) {
+      layoutPositions['regulator'] = { x: xControl + controlCount * 180, y: controlY };
+      controlCount++;
+    }
+    
+    // Position load components at top
+    let loadCount = 0;
+    const loadComponents = ['fan', 'light-bulb', 'light-tube', 'socket-5a', 'socket-15a'];
+    loadComponents.forEach(loadId => {
+      if (selectedComponentIds.includes(loadId)) {
+        layoutPositions[loadId] = { x: xLoad - 200 + loadCount * 180, y: loadY };
+        loadCount++;
+      }
+    });
+    
+    // Position backup components
+    if (hasBattery) {
+      layoutPositions['battery'] = { x: 50, y: 500 };
+    }
+    if (hasInverter) {
+      layoutPositions['inverter'] = { x: 250, y: 500 };
+    }
+  }
+
+  // Create nodes with positions
   selectedComponents.forEach((component) => {
     if (!component) return;
     
-    const pos = categoryPositions[component.category];
-    const count = categoryCounters[component.category];
+    const pos = layoutPositions[component.id] || { x: 100, y: 100 };
     
     nodes.push({
       id: component.id,
       type: 'electrical',
-      position: {
-        x: pos.x,
-        y: pos.baseY + count * 180,
-      },
+      position: pos,
       data: {
         componentId: component.id,
         label: component.name,
       },
     });
-
-    categoryCounters[component.category]++;
   });
 
   // Generate proper closed circuit connections
@@ -431,10 +486,25 @@ export function generateWiringDiagram(selectedComponentIds: string[]): WiringRes
       target: conn.target,
       sourceHandle: conn.sourceHandle,
       targetHandle: conn.targetHandle,
-      style: { stroke: wireColor, strokeWidth: 3 },
+      type: 'smoothstep',
+      style: { 
+        stroke: wireColor, 
+        strokeWidth: conn.wireType === 'live' ? 4 : 3,
+      },
       animated: conn.wireType === 'live',
-      label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') : undefined,
-      labelStyle: conn.wireType === 'dc' ? { fill: wireColor, fontWeight: 600 } : undefined,
+      label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') : 
+             conn.wireType === 'live' ? 'L' :
+             conn.wireType === 'neutral' ? 'N' :
+             conn.wireType === 'earth' ? 'E' : undefined,
+      labelStyle: { 
+        fill: wireColor, 
+        fontWeight: 700,
+        fontSize: 12,
+      },
+      labelBgStyle: {
+        fill: 'white',
+        fillOpacity: 0.9,
+      },
     });
   });
 
@@ -453,49 +523,71 @@ export function generateWiringExplanation(selectedComponentIds: string[]): strin
   const hasBattery = selectedComponentIds.includes('battery');
 
   explanations.push("🔌 CLOSED CIRCUIT PRINCIPLE:");
-  explanations.push("   Every circuit needs a complete path for current to flow - Live OUT and Neutral BACK to source.");
+  explanations.push("   A complete circuit requires current to flow from source → through load → back to source.");
+  explanations.push("   Live (Red) = Power delivery path | Neutral (Blue) = Return path");
   explanations.push("");
 
+  if (hasFan && hasSwitch && hasRegulator) {
+    explanations.push("🌀 CEILING FAN CIRCUIT (as shown in diagram):");
+    explanations.push("   ┌──────────────────────────────────────┐");
+    explanations.push("   │                CEILING FAN            │");
+    explanations.push("   │              (L)     (N)              │");
+    explanations.push("   │               │       │               │");
+    explanations.push("   │               │       │               │");
+    explanations.push("   │     ┌─────────┘       └───────┐       │");
+    explanations.push("   │     │                         │       │");
+    explanations.push("   │  [REGULATOR]                  │       │");
+    explanations.push("   │     │                         │       │");
+    explanations.push("   │  [SWITCH]                     │       │");
+    explanations.push("   │     │                         │       │");
+    explanations.push("   │     └────── AC SUPPLY ────────┘       │");
+    explanations.push("   │            (L)    (N)                 │");
+    explanations.push("   └──────────────────────────────────────┘");
+    explanations.push("");
+    explanations.push("   → LIVE PATH: AC Supply(L) → Switch → Regulator → Fan(L)");
+    explanations.push("   ← NEUTRAL PATH: Fan(N) → AC Supply(N) [Direct return]");
+  }
+
   if (hasMCB) {
-    explanations.push("🔌 MCB (Miniature Circuit Breaker) is the main protection device. All power flows through it first.");
+    explanations.push("");
+    explanations.push("🔌 MCB (Miniature Circuit Breaker):");
+    explanations.push("   Protection device - trips to break circuit on overload/short circuit.");
   }
 
   if (hasDB) {
-    explanations.push("📦 Distribution Board receives power from MCB and distributes it. It provides Live (outgoing), Neutral (return), and Earth (safety).");
-  }
-
-  if (hasFan && hasSwitch && hasRegulator) {
-    explanations.push("🌀 Ceiling Fan CLOSED CIRCUIT:");
-    explanations.push("   → Live: DB → Switch → Regulator → Fan (power delivery)");
-    explanations.push("   ← Neutral: Fan → DB (current return path)");
-    explanations.push("   ⏚ Earth: Fan → DB (safety grounding)");
+    explanations.push("");
+    explanations.push("📦 Distribution Board:");
+    explanations.push("   Central distribution point with Live, Neutral, and Earth bus bars.");
   }
 
   if (selectedComponentIds.includes('light-bulb') || selectedComponentIds.includes('light-tube')) {
-    explanations.push("💡 Light CLOSED CIRCUIT:");
-    explanations.push("   → Live: DB → Switch → Light (power delivery)");
-    explanations.push("   ← Neutral: Light → DB (current return path)");
+    explanations.push("");
+    explanations.push("💡 LIGHT CIRCUIT:");
+    explanations.push("   → LIVE: Supply → Switch → Light(L)");
+    explanations.push("   ← NEUTRAL: Light(N) → Supply(N)");
   }
 
   if (selectedComponentIds.includes('socket-5a') || selectedComponentIds.includes('socket-15a')) {
-    explanations.push("🔌 Socket CLOSED CIRCUIT:");
-    explanations.push("   → Live: DB → Socket (power delivery)");
-    explanations.push("   ← Neutral: Socket → DB (current return path)");
-    explanations.push("   ⏚ Earth: Socket → DB (safety grounding)");
+    explanations.push("");
+    explanations.push("🔌 SOCKET CIRCUIT:");
+    explanations.push("   → LIVE: DB(L) → Socket(L)");
+    explanations.push("   ← NEUTRAL: Socket(N) → DB(N)");
+    explanations.push("   ⏚ EARTH: Socket(E) → DB(E) [Safety]");
   }
 
   if (hasInverter && hasBattery) {
-    explanations.push("🔋 Inverter DC CLOSED CIRCUIT:");
-    explanations.push("   → DC+: Battery (+) → Inverter (power delivery)");
-    explanations.push("   ← DC-: Inverter → Battery (-) (current return path)");
+    explanations.push("");
+    explanations.push("🔋 INVERTER DC CIRCUIT:");
+    explanations.push("   → DC+: Battery(+) → Inverter(DC+)");
+    explanations.push("   ← DC-: Inverter(DC-) → Battery(-)");
   }
 
   explanations.push("");
   explanations.push("⚡ Wire Color Code:");
-  explanations.push("   🔴 Red = Live (L) - Carries current from source");
-  explanations.push("   🔵 Blue = Neutral (N) - Return path for current");
+  explanations.push("   🔴 Red = Live (L) - Carries current FROM source");
+  explanations.push("   🔵 Blue = Neutral (N) - Returns current TO source");
   explanations.push("   🟢 Green = Earth (E) - Safety grounding");
-  explanations.push("   🟡 Yellow = DC connections");
+  explanations.push("   🟡 Yellow = DC positive/connections");
 
   return explanations;
 }

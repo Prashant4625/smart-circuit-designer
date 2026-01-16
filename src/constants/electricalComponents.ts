@@ -60,9 +60,9 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: 'Standard ceiling fan with capacitor',
     icon: 'fan',
     terminals: [
-      { id: 'fan-l', type: 'L', label: 'Live', position: 'left', color: '#ef4444' },
-      { id: 'fan-n', type: 'N', label: 'Neutral', position: 'left', color: '#3b82f6' },
-      { id: 'fan-e', type: 'E', label: 'Earth', position: 'bottom', color: '#22c55e' },
+      { id: 'fan-l', type: 'L', label: 'Live', position: 'bottom', color: '#ef4444' },
+      { id: 'fan-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
+      { id: 'fan-e', type: 'E', label: 'Earth', position: 'left', color: '#22c55e' },
     ],
     requires: ['switch', 'regulator'],
   },
@@ -73,8 +73,8 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: 'Standard incandescent or LED bulb',
     icon: 'bulb',
     terminals: [
-      { id: 'bulb-l', type: 'L', label: 'Live', position: 'left', color: '#ef4444' },
-      { id: 'bulb-n', type: 'N', label: 'Neutral', position: 'left', color: '#3b82f6' },
+      { id: 'bulb-l', type: 'L', label: 'Live', position: 'bottom', color: '#ef4444' },
+      { id: 'bulb-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
     ],
     requires: ['switch'],
   },
@@ -85,9 +85,9 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: 'Fluorescent tube light with choke',
     icon: 'tube',
     terminals: [
-      { id: 'tube-l', type: 'L', label: 'Live', position: 'left', color: '#ef4444' },
-      { id: 'tube-n', type: 'N', label: 'Neutral', position: 'left', color: '#3b82f6' },
-      { id: 'tube-e', type: 'E', label: 'Earth', position: 'bottom', color: '#22c55e' },
+      { id: 'tube-l', type: 'L', label: 'Live', position: 'bottom', color: '#ef4444' },
+      { id: 'tube-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
+      { id: 'tube-e', type: 'E', label: 'Earth', position: 'left', color: '#22c55e' },
     ],
     requires: ['switch'],
   },
@@ -98,9 +98,9 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: '5 Amp socket for light appliances',
     icon: 'socket5a',
     terminals: [
-      { id: 'sock5-l', type: 'L', label: 'Live', position: 'left', color: '#ef4444' },
-      { id: 'sock5-n', type: 'N', label: 'Neutral', position: 'left', color: '#3b82f6' },
-      { id: 'sock5-e', type: 'E', label: 'Earth', position: 'bottom', color: '#22c55e' },
+      { id: 'sock5-l', type: 'L', label: 'Live', position: 'bottom', color: '#ef4444' },
+      { id: 'sock5-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
+      { id: 'sock5-e', type: 'E', label: 'Earth', position: 'left', color: '#22c55e' },
     ],
   },
   {
@@ -110,9 +110,9 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: '15 Amp socket for heavy appliances',
     icon: 'socket15a',
     terminals: [
-      { id: 'sock15-l', type: 'L', label: 'Live', position: 'left', color: '#ef4444' },
-      { id: 'sock15-n', type: 'N', label: 'Neutral', position: 'left', color: '#3b82f6' },
-      { id: 'sock15-e', type: 'E', label: 'Earth', position: 'bottom', color: '#22c55e' },
+      { id: 'sock15-l', type: 'L', label: 'Live', position: 'bottom', color: '#ef4444' },
+      { id: 'sock15-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
+      { id: 'sock15-e', type: 'E', label: 'Earth', position: 'left', color: '#22c55e' },
     ],
   },
   // Backup Power Components

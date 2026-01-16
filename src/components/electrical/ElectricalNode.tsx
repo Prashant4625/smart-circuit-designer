@@ -27,32 +27,49 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
     terminal: typeof component.terminals[0],
     index: number,
     total: number,
-    position: Position,
-    type: 'source' | 'target'
+    position: Position
   ) => {
     const isHorizontal = position === Position.Top || position === Position.Bottom;
     const offset = ((index + 1) / (total + 1)) * 100;
 
+    // Create both source and target handles for the same terminal to allow bidirectional connections
     return (
       <TooltipProvider key={terminal.id} delayDuration={100}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Handle
-              type={type}
-              position={position}
-              id={terminal.id}
-              style={{
-                ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
-                background: terminal.color,
-                width: 14,
-                height: 14,
-                border: '2px solid white',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                cursor: 'crosshair',
-                transition: 'transform 0.15s ease',
-              }}
-              className="hover:scale-125"
-            />
+            <div>
+              <Handle
+                type="source"
+                position={position}
+                id={terminal.id}
+                style={{
+                  ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
+                  background: terminal.color,
+                  width: 14,
+                  height: 14,
+                  border: '3px solid white',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                  cursor: 'crosshair',
+                  transition: 'transform 0.15s ease',
+                  zIndex: 10,
+                }}
+                className="hover:scale-125"
+              />
+              <Handle
+                type="target"
+                position={position}
+                id={`${terminal.id}-target`}
+                style={{
+                  ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
+                  background: 'transparent',
+                  width: 20,
+                  height: 20,
+                  border: 'none',
+                  cursor: 'crosshair',
+                  zIndex: 5,
+                }}
+              />
+            </div>
           </TooltipTrigger>
           <TooltipContent side={position === Position.Top ? 'top' : position === Position.Bottom ? 'bottom' : position === Position.Left ? 'left' : 'right'}>
             <p className="text-xs font-medium">{terminal.label}</p>
@@ -91,22 +108,22 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
       {/* Top Terminals */}
       {topTerminals.map((terminal, index) => 
-        renderHandle(terminal, index, topTerminals.length, Position.Top, 'target')
+        renderHandle(terminal, index, topTerminals.length, Position.Top)
       )}
 
       {/* Bottom Terminals */}
       {bottomTerminals.map((terminal, index) => 
-        renderHandle(terminal, index, bottomTerminals.length, Position.Bottom, 'source')
+        renderHandle(terminal, index, bottomTerminals.length, Position.Bottom)
       )}
 
       {/* Left Terminals */}
       {leftTerminals.map((terminal, index) => 
-        renderHandle(terminal, index, leftTerminals.length, Position.Left, 'target')
+        renderHandle(terminal, index, leftTerminals.length, Position.Left)
       )}
 
       {/* Right Terminals */}
       {rightTerminals.map((terminal, index) => 
-        renderHandle(terminal, index, rightTerminals.length, Position.Right, 'source')
+        renderHandle(terminal, index, rightTerminals.length, Position.Right)
       )}
 
       {/* Component Content */}
