@@ -3,13 +3,16 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ComponentIcon } from './ComponentIcon';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ElectricalNodeData {
   componentId: string;
   label: string;
+  onRemove?: (nodeId: string) => void;
 }
 
-export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ data, selected }) => {
+export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, selected }) => {
   const component = ELECTRICAL_COMPONENTS.find(c => c.id === data.componentId);
   
   if (!component) return null;
@@ -60,15 +63,32 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ data, selec
     );
   };
 
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (data.onRemove) {
+      data.onRemove(id);
+    }
+  };
+
   return (
     <div
       className={`
-        relative bg-card border-2 rounded-xl p-3 shadow-lg transition-all duration-200 cursor-move
+        relative bg-card border-2 rounded-xl p-3 shadow-lg transition-all duration-200 cursor-move group
         ${selected ? 'border-primary shadow-xl shadow-primary/20 ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground/50'}
         hover:shadow-xl
       `}
       style={{ minWidth: 110, minHeight: 90 }}
     >
+      {/* Remove Button */}
+      <Button
+        variant="destructive"
+        size="icon"
+        className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md"
+        onClick={handleRemove}
+      >
+        <X className="w-3 h-3" />
+      </Button>
+
       {/* Top Terminals */}
       {topTerminals.map((terminal, index) => 
         renderHandle(terminal, index, topTerminals.length, Position.Top, 'target')
@@ -99,7 +119,7 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ data, selec
 
       {/* Selection Indicator */}
       {selected && (
-        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center">
+        <div className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center">
           <div className="w-2 h-2 bg-white rounded-full" />
         </div>
       )}
