@@ -1,9 +1,19 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Node, Edge } from 'reactflow';
+import {
+  Node,
+  Edge,
+  applyNodeChanges,
+  applyEdgeChanges,
+  OnNodesChange,
+  OnEdgesChange,
+  NodeChange,
+  EdgeChange
+} from 'reactflow';
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ValidationError } from '@/types/electrical';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import { generateWiringDiagram, validateUserConnections, ConnectionValidationResult } from '@/utils/wiringLogic';
+import { generateWiringDiagram, validateUserConnections, ConnectionValidationResult, getCorrectConnections } from '@/utils/wiringLogic';
+import { WIRE_COLORS } from '@/constants/electricalComponents';
 import { toast } from 'sonner';
 
 interface DiagramState {
@@ -45,7 +55,7 @@ export function useElectricalDiagram() {
   // Validation errors based on component dependencies
   const validationErrors = useMemo<ValidationError[]>(() => {
     const errors: ValidationError[] = [];
-    
+
     selectedComponents.forEach(compId => {
       const component = ELECTRICAL_COMPONENTS.find(c => c.id === compId);
       if (component?.requires) {
@@ -53,7 +63,7 @@ export function useElectricalDiagram() {
         if (missing.length > 0) {
           errors.push({
             componentId: compId,
-            message: `${component.name} requires: ${missing.map(id => 
+            message: `${component.name} requires: ${missing.map(id =>
               ELECTRICAL_COMPONENTS.find(c => c.id === id)?.name
             ).join(', ')}`,
             requiredComponents: missing,
@@ -72,17 +82,19 @@ export function useElectricalDiagram() {
   const removeComponent = useCallback((nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
-    
+
     const componentId = node.data.componentId;
-    
+
     // Remove node
     setNodes(currentNodes => currentNodes.filter(n => n.id !== nodeId));
-    
-    // Remove edges connected to this node
-    setEdges(currentEdges => currentEdges.filter(e => 
-      e.source !== nodeId && e.target !== nodeId
-    ));
-    
+
+    // Clear ALL edges to allow manual rewiring
+    setEdges([]);
+
+    // Enable manual mode
+    setIsManualMode(true);
+    setConnectionValidation(null);
+
     // Remove from selected components if no other nodes have this component
     setSelectedComponents(prev => {
       const otherNodesWithSameComponent = nodes.filter(
@@ -93,26 +105,41 @@ export function useElectricalDiagram() {
       }
       return prev;
     });
-    
-    toast.success(`Removed ${componentId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`);
-  }, [nodes]);
 
+    toast.info(`Removed ${componentId.replace('-', ' ')}. Diagram cleared for manual editing.`);
+  }, [nodes]);
   const toggleComponent = useCallback((componentId: string) => {
     setSelectedComponents(prev => {
-      if (prev.includes(componentId)) {
-        // Remove component and its node
+      const isSelected = prev.includes(componentId);
+
+      if (isSelected) {
+        // Remove component
         setNodes(currentNodes => currentNodes.filter(n => n.data.componentId !== componentId));
-        // Remove edges connected to this component
-        setEdges(currentEdges => currentEdges.filter(e => 
-          !e.source.includes(componentId) && !e.target.includes(componentId)
-        ));
+        setEdges([]); // Clear edges on removal
+        setIsManualMode(true);
+        setConnectionValidation(null);
+        toast.info(`Removed ${componentId.replace('-', ' ')}`);
         return prev.filter(id => id !== componentId);
+      } else {
+        // Add component
+        const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
+        if (component) {
+          const newNode: Node = {
+            id: `${componentId}-${Date.now()}`,
+            type: 'electrical',
+            position: { x: 100 + Math.random() * 400, y: 100 + Math.random() * 300 },
+            data: {
+              componentId: component.id,
+              label: component.name,
+            },
+          };
+          setNodes(prevNodes => [...prevNodes, newNode]);
+          setDiagramGenerated(true);
+          setIsManualMode(true);
+        }
+        return [...prev, componentId];
       }
-      return [...prev, componentId];
     });
-    setDiagramGenerated(false);
-    setIsManualMode(false);
-    setConnectionValidation(null);
   }, []);
 
   const addRequiredComponent = useCallback((componentId: string) => {
@@ -146,7 +173,7 @@ export function useElectricalDiagram() {
     };
 
     setNodes(prev => [...prev, newNode]);
-    
+
     // Add to selected components if not already
     setSelectedComponents(prev => {
       if (!prev.includes(componentId)) {
@@ -161,7 +188,7 @@ export function useElectricalDiagram() {
 
   const generateDiagram = useCallback(() => {
     if (hasErrors) return;
-    
+
     const { nodes: newNodes, edges: newEdges } = generateWiringDiagram(selectedComponents);
     setNodes(newNodes);
     setEdges(newEdges);
@@ -173,7 +200,7 @@ export function useElectricalDiagram() {
   // Generate nodes only (for manual wiring practice)
   const generateNodesOnly = useCallback(() => {
     if (hasErrors) return;
-    
+
     const { nodes: newNodes } = generateWiringDiagram(selectedComponents);
     setNodes(newNodes);
     setEdges([]); // No edges - user will connect manually
@@ -185,7 +212,7 @@ export function useElectricalDiagram() {
 
   const autoArrange = useCallback(() => {
     if (nodes.length === 0) return;
-    
+
     const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents);
     setNodes(arrangedNodes);
     setEdges(arrangedEdges);
@@ -217,20 +244,57 @@ export function useElectricalDiagram() {
   // Auto-connect wires for existing components
   const autoConnectWires = useCallback(() => {
     if (nodes.length === 0) return;
-    
-    const { edges: newEdges } = generateWiringDiagram(selectedComponents);
+
+    // Use the nodes currently on canvas to determine connections
+    const correctConnections = getCorrectConnections(nodes);
+
+    // Convert CorrectConnection[] to Edge[]
+    const newEdges: Edge[] = correctConnections.map((conn, index) => {
+      const wireColor = conn.wireType === 'live' ? WIRE_COLORS.live :
+        conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
+          conn.wireType === 'earth' ? WIRE_COLORS.earth :
+            WIRE_COLORS.dc;
+
+      return {
+        id: `${conn.source}-${conn.target}-${conn.wireType}-${index}`,
+        source: conn.source,
+        target: conn.target,
+        sourceHandle: conn.sourceHandle,
+        targetHandle: conn.targetHandle,
+        type: 'smoothstep',
+        style: {
+          stroke: wireColor,
+          strokeWidth: conn.wireType === 'live' ? 4 : 3,
+        },
+        animated: conn.wireType === 'live',
+        label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') :
+          conn.wireType === 'live' ? 'L' :
+            conn.wireType === 'neutral' ? 'N' :
+              conn.wireType === 'earth' ? 'E' : undefined,
+        labelStyle: {
+          fill: wireColor,
+          fontWeight: 700,
+          fontSize: 12,
+        },
+        labelBgStyle: {
+          fill: 'white',
+          fillOpacity: 0.9,
+        },
+      };
+    });
+
     setEdges(newEdges);
     setIsManualMode(false);
     setConnectionValidation(null);
-  }, [selectedComponents, nodes.length]);
+  }, [nodes]);
 
   // Validate user connections
   const validateConnections = useCallback(() => {
     if (nodes.length === 0) return;
-    
+
     const result = validateUserConnections(edges, nodes);
     setConnectionValidation(result);
-    
+
     if (result.isValid) {
       toast.success('🎉 Perfect! All connections are correct!');
     } else {
@@ -241,13 +305,60 @@ export function useElectricalDiagram() {
   // Show correct connections
   const showCorrectConnections = useCallback(() => {
     if (nodes.length === 0) return;
-    
+
     const { edges: correctEdges } = generateWiringDiagram(selectedComponents);
     setEdges(correctEdges);
     setIsManualMode(false);
     setConnectionValidation(null);
     toast.success('Showing correct circuit connections');
   }, [selectedComponents, nodes.length]);
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes]
+  );
+
+  // History for Undo (Nodes + Edges)
+  const [history, setHistory] = useState<{ nodes: Node[], edges: Edge[] }[]>([]);
+
+  const saveHistory = useCallback(() => {
+    setHistory(prev => [...prev, { nodes: [...nodes], edges: [...edges] }]);
+  }, [nodes, edges]);
+
+  const undo = useCallback(() => {
+    setHistory(prev => {
+      if (prev.length === 0) return prev;
+      const newHistory = [...prev];
+      const previousState = newHistory.pop();
+      if (previousState) {
+        setNodes(previousState.nodes);
+        setEdges(previousState.edges);
+      }
+      return newHistory;
+    });
+  }, []);
+
+  const canUndo = history.length > 0;
+
+  // Wrapper to save history before changing edges (for manual connections)
+  const setEdgesWithHistory = useCallback((newEdges: Edge[] | ((prev: Edge[]) => Edge[])) => {
+    setEdges(prev => {
+      // Save current state (nodes + edges) before modifying edges
+      setHistory(h => [...h, { nodes: [...nodes], edges: [...prev] }]);
+
+      if (typeof newEdges === 'function') {
+        return newEdges(prev);
+      }
+      return newEdges;
+    });
+  }, [nodes]); // Depend on nodes to save correct state
+
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => {
+      setEdgesWithHistory((eds) => applyEdgeChanges(changes, eds));
+    },
+    [setEdgesWithHistory]
+  );
 
   return {
     selectedComponents,
@@ -270,8 +381,12 @@ export function useElectricalDiagram() {
     validateConnections,
     showCorrectConnections,
     setNodes,
-    setEdges,
+    setEdges: setEdgesWithHistory,
+    onNodesChange,
+    onEdgesChange,
     hasErrors,
     canGenerate,
+    undo,
+    canUndo,
   };
 }

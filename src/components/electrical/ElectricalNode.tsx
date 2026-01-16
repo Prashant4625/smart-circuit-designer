@@ -14,7 +14,7 @@ interface ElectricalNodeData {
 
 export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, selected }) => {
   const component = ELECTRICAL_COMPONENTS.find(c => c.id === data.componentId);
-  
+
   if (!component) return null;
 
   // Get terminals by position
@@ -55,20 +55,6 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
                 }}
                 className="hover:scale-125"
               />
-              <Handle
-                type="target"
-                position={position}
-                id={`${terminal.id}-target`}
-                style={{
-                  ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
-                  background: 'transparent',
-                  width: 20,
-                  height: 20,
-                  border: 'none',
-                  cursor: 'crosshair',
-                  zIndex: 5,
-                }}
-              />
             </div>
           </TooltipTrigger>
           <TooltipContent side={position === Position.Top ? 'top' : position === Position.Bottom ? 'bottom' : position === Position.Left ? 'left' : 'right'}>
@@ -107,22 +93,22 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
       </Button>
 
       {/* Top Terminals */}
-      {topTerminals.map((terminal, index) => 
+      {topTerminals.map((terminal, index) =>
         renderHandle(terminal, index, topTerminals.length, Position.Top)
       )}
 
       {/* Bottom Terminals */}
-      {bottomTerminals.map((terminal, index) => 
+      {bottomTerminals.map((terminal, index) =>
         renderHandle(terminal, index, bottomTerminals.length, Position.Bottom)
       )}
 
       {/* Left Terminals */}
-      {leftTerminals.map((terminal, index) => 
+      {leftTerminals.map((terminal, index) =>
         renderHandle(terminal, index, leftTerminals.length, Position.Left)
       )}
 
       {/* Right Terminals */}
-      {rightTerminals.map((terminal, index) => 
+      {rightTerminals.map((terminal, index) =>
         renderHandle(terminal, index, rightTerminals.length, Position.Right)
       )}
 
@@ -142,7 +128,7 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
       )}
 
       {/* Category Badge */}
-      <div 
+      <div
         className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
       >
         {component.category}

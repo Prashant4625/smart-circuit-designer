@@ -246,6 +246,31 @@ export const ComponentIcon: React.FC<ComponentIconProps> = ({ type, className = 
           </svg>
         );
 
+      case 'supply':
+        return (
+          <svg viewBox="0 0 80 64" className={className}>
+            {/* Supply Box Body */}
+            <rect x="4" y="8" width="72" height="48" rx="4" fill="#1f2937" stroke="#111827" strokeWidth="2"/>
+            {/* Inner Panel */}
+            <rect x="10" y="14" width="60" height="36" rx="2" fill="#374151"/>
+            {/* AC Symbol */}
+            <path d="M 24 32 L 28 20 L 32 44 L 36 20 L 40 32" stroke="#ef4444" strokeWidth="2" fill="none"/>
+            <text x="24" y="38" textAnchor="middle" fontSize="8" fill="#ef4444" fontWeight="bold">~</text>
+            {/* 230V Label */}
+            <text x="32" y="48" textAnchor="middle" fontSize="10" fill="#d1d5db" fontWeight="bold">230V</text>
+            {/* Output Terminals */}
+            {/* Live terminal */}
+            <circle cx="60" cy="20" r="5" fill="#ef4444" stroke="#b91c1c" strokeWidth="2"/>
+            <text x="60" y="22" textAnchor="middle" fontSize="6" fill="white" fontWeight="bold">L</text>
+            {/* Neutral terminal */}
+            <circle cx="60" cy="32" r="5" fill="#3b82f6" stroke="#1e40af" strokeWidth="2"/>
+            <text x="60" y="34" textAnchor="middle" fontSize="6" fill="white" fontWeight="bold">N</text>
+            {/* Earth terminal */}
+            <circle cx="60" cy="44" r="5" fill="#22c55e" stroke="#16a34a" strokeWidth="2"/>
+            <text x="60" y="46" textAnchor="middle" fontSize="6" fill="white" fontWeight="bold">E</text>
+          </svg>
+        );
+
       default:
         return (
           <svg viewBox="0 0 64 64" className={className}>

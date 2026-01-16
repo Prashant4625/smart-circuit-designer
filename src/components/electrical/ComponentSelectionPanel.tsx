@@ -2,10 +2,7 @@ import React, { useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ELECTRICAL_COMPONENTS, COMPONENT_CATEGORIES } from '@/constants/electricalComponents';
 import { ComponentCard } from './ComponentCard';
-import { DraggableComponent } from './DraggableComponent';
 import { ValidationError, ElectricalComponent } from '@/types/electrical';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ToggleLeft, Move } from 'lucide-react';
 
 interface ComponentSelectionPanelProps {
   selectedComponents: string[];
@@ -25,7 +22,7 @@ export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = (
   // Group components by category
   const groupedComponents = React.useMemo(() => {
     const groups: Record<string, typeof ELECTRICAL_COMPONENTS> = {};
-    
+
     Object.keys(COMPONENT_CATEGORIES).forEach((category) => {
       groups[category] = ELECTRICAL_COMPONENTS.filter(
         (comp) => comp.category === category
@@ -51,7 +48,7 @@ export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = (
       <div className="p-4 border-b border-border">
         <h2 className="text-lg font-bold text-foreground">Components</h2>
         <p className="text-sm text-muted-foreground">
-          Toggle or drag components to canvas
+          Click to add components to canvas
         </p>
         {selectedComponents.length > 0 && (
           <div className="mt-2 text-xs text-muted-foreground">
@@ -60,77 +57,37 @@ export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = (
         )}
       </div>
 
-      <Tabs defaultValue="toggle" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="mx-4 mt-2 grid w-auto grid-cols-2">
-          <TabsTrigger value="toggle" className="gap-1 text-xs">
-            <ToggleLeft className="w-3 h-3" />
-            Toggle Mode
-          </TabsTrigger>
-          <TabsTrigger value="drag" className="gap-1 text-xs">
-            <Move className="w-3 h-3" />
-            Drag & Drop
-          </TabsTrigger>
-        </TabsList>
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-6">
+          {sortedCategories.map(([category, { label }]) => (
+            <div key={category}>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                {label}
+              </h3>
+              <div className="space-y-4">
+                {groupedComponents[category]?.map((component) => {
+                  const isSelected = selectedComponents.includes(component.id);
+                  const error = validationErrors.find(
+                    (e) => e.componentId === component.id
+                  );
 
-        {/* Toggle Mode */}
-        <TabsContent value="toggle" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-6">
-              {sortedCategories.map(([category, { label }]) => (
-                <div key={category}>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                    {label}
-                  </h3>
-                  <div className="space-y-2">
-                    {groupedComponents[category]?.map((component) => {
-                      const error = validationErrors.find(
-                        (e) => e.componentId === component.id
-                      );
-                      return (
-                        <ComponentCard
-                          key={component.id}
-                          component={component}
-                          isSelected={selectedComponents.includes(component.id)}
-                          onToggle={() => onToggleComponent(component.id)}
-                          error={error}
-                          onAddRequired={onAddRequired}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        {/* Drag & Drop Mode */}
-        <TabsContent value="drag" className="flex-1 overflow-hidden m-0">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-4">
-              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
-                💡 Drag components directly onto the canvas to add them to your diagram
-              </p>
-              {sortedCategories.map(([category, { label }]) => (
-                <div key={category}>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                    {label}
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2">
-                    {groupedComponents[category]?.map((component) => (
-                      <DraggableComponent
-                        key={component.id}
+                  return (
+                    <div key={component.id} className="space-y-1">
+                      <ComponentCard
                         component={component}
-                        onDragStart={handleDragStart}
+                        isSelected={isSelected}
+                        onToggle={() => onToggleComponent(component.id)}
+                        error={error}
+                        onAddRequired={onAddRequired}
                       />
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

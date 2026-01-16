@@ -38,6 +38,10 @@ const Index = () => {
     setEdges,
     hasErrors,
     canGenerate,
+    onNodesChange,
+    onEdgesChange,
+    undo,
+    canUndo,
   } = useElectricalDiagram();
 
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
@@ -138,10 +142,12 @@ const Index = () => {
         onShare={handleShare}
         onAutoArrange={autoArrange}
         onValidate={validateConnections}
+        onUndo={undo}
         canGenerate={canGenerate}
         hasErrors={hasErrors}
         isManualMode={isManualMode}
         hasNodes={nodes.length > 0}
+        canUndo={canUndo}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -158,27 +164,9 @@ const Index = () => {
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <div ref={canvasContainerRef} className="flex-1 relative">
             {nodes.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30 border-2 border-dashed border-muted-foreground/20">
-                <div className="text-center max-w-md p-8">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-4xl">🔌</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Start Your Diagram</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Choose a method to create your wiring diagram:</p>
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
-                      <span className="text-lg">1️⃣</span>
-                      <span><strong>Auto-Wire:</strong> Select components → Generate with connections</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
-                      <span className="text-lg">2️⃣</span>
-                      <span><strong>Practice Mode:</strong> Wire yourself and check if correct</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
-                      <span className="text-lg">3️⃣</span>
-                      <span><strong>Drag & Drop:</strong> Drag components and connect manually</span>
-                    </div>
-                  </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                <div className="text-center p-8">
+                  <p className="text-muted-foreground">Select components from the left panel to start</p>
                 </div>
               </div>
             ) : (
@@ -186,8 +174,9 @@ const Index = () => {
                 <DiagramCanvas
                   nodes={nodes}
                   edges={edges}
-                  onNodesChange={setNodes}
-                  onEdgesChange={setEdges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  setEdges={setEdges}
                   reactFlowRef={reactFlowRef}
                   onDropComponent={handleDropComponent}
                   onRemoveComponent={removeComponent}

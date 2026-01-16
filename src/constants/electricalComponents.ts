@@ -1,6 +1,20 @@
 import { ElectricalComponent } from '@/types/electrical';
 
 export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
+  // Main Power Supply
+  {
+    id: 'power-supply',
+    name: 'AC Supply',
+    category: 'power',
+    description: 'Main AC power supply source (230V/50Hz)',
+    icon: 'supply',
+    terminals: [
+      { id: 'supply-l', type: 'L', label: 'Live', position: 'right', color: '#ef4444' },
+      { id: 'supply-n', type: 'N', label: 'Neutral', position: 'right', color: '#3b82f6' },
+      { id: 'supply-e', type: 'E', label: 'Earth', position: 'bottom', color: '#22c55e' },
+    ],
+    requiredBy: ['mcb'],
+  },
   // Power Source Components
   {
     id: 'mcb',
@@ -10,8 +24,11 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     icon: 'mcb',
     terminals: [
       { id: 'mcb-in-l', type: 'L', label: 'Line In', position: 'top', color: '#ef4444' },
+      { id: 'mcb-in-n', type: 'N', label: 'Neutral In', position: 'top', color: '#3b82f6' },
       { id: 'mcb-out-l', type: 'OUT', label: 'Line Out', position: 'bottom', color: '#ef4444' },
+      { id: 'mcb-out-n', type: 'N', label: 'Neutral Out', position: 'bottom', color: '#3b82f6' },
     ],
+    requires: ['power-supply'],
   },
   {
     id: 'distribution-board',

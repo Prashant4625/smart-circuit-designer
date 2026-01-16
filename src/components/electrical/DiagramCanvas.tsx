@@ -11,16 +11,21 @@ import ReactFlow, {
   Panel,
   ReactFlowInstance,
   Node,
+  OnNodesChange,
+  OnEdgesChange,
+  ConnectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { ElectricalNode } from './ElectricalNode';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
+import { DeletableEdge } from './DeletableEdge';
 
 interface DiagramCanvasProps {
   nodes: Node[];
   edges: any[];
-  onNodesChange: (nodes: Node[]) => void;
-  onEdgesChange: (edges: any[]) => void;
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  setEdges: (edges: any) => void;
   reactFlowRef: React.MutableRefObject<ReactFlowInstance | null>;
   onDropComponent?: (componentId: string, position: { x: number; y: number }) => void;
   onRemoveComponent?: (nodeId: string) => void;
@@ -33,70 +38,46 @@ const minimapStyle = {
 };
 
 export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
-  nodes: initialNodes,
-  edges: initialEdges,
-  onNodesChange: onNodesUpdate,
-  onEdgesChange: onEdgesUpdate,
+  nodes,
+  edges,
+  onNodesChange,
+  onEdgesChange,
+  setEdges,
   reactFlowRef,
   onDropComponent,
   onRemoveComponent,
   isManualMode,
 }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  
+
   // Add remove handler to node data
-  const nodesWithHandlers = React.useMemo(() => 
-    initialNodes.map(node => ({
+  const nodesWithHandlers = React.useMemo(() =>
+    nodes.map(node => ({
       ...node,
       data: {
         ...node.data,
         onRemove: onRemoveComponent,
       },
     })),
-    [initialNodes, onRemoveComponent]
+    [nodes, onRemoveComponent]
   );
-  
-  const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithHandlers);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
   const [isDragOver, setIsDragOver] = useState(false);
 
   const nodeTypes: NodeTypes = React.useMemo(() => ({
     electrical: ElectricalNode,
   }), []);
 
-  // Sync with parent when nodes/edges change externally
-  React.useEffect(() => {
-    setNodes(nodesWithHandlers);
-  }, [nodesWithHandlers, setNodes]);
-
-  React.useEffect(() => {
-    setEdges(initialEdges);
-  }, [initialEdges, setEdges]);
-
-  // Update parent when nodes change
-  React.useEffect(() => {
-    // Strip out the onRemove handler before sending to parent
-    const cleanNodes = nodes.map(n => ({
-      ...n,
-      data: {
-        componentId: n.data.componentId,
-        label: n.data.label,
-      },
-    }));
-    onNodesUpdate(cleanNodes);
-  }, [nodes, onNodesUpdate]);
-
-  // Update parent when edges change
-  React.useEffect(() => {
-    onEdgesUpdate(edges);
-  }, [edges, onEdgesUpdate]);
+  const edgeTypes = React.useMemo(() => ({
+    deletable: DeletableEdge,
+  }), []);
 
   const onConnect = useCallback(
     (params: Connection) => {
       // Determine wire color based on terminal types
       let strokeColor: string = WIRE_COLORS.live;
       let isAnimated = true;
-      
+
       if (params.sourceHandle?.includes('-n') || params.targetHandle?.includes('-n')) {
         strokeColor = WIRE_COLORS.neutral;
         isAnimated = false;
@@ -104,9 +85,9 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         strokeColor = WIRE_COLORS.earth;
         isAnimated = false;
       } else if (params.sourceHandle?.includes('dc') || params.targetHandle?.includes('dc') ||
-                 params.sourceHandle?.includes('bat') || params.targetHandle?.includes('bat') ||
-                 params.sourceHandle?.includes('pos') || params.targetHandle?.includes('pos') ||
-                 params.sourceHandle?.includes('neg') || params.targetHandle?.includes('neg')) {
+        params.sourceHandle?.includes('bat') || params.targetHandle?.includes('bat') ||
+        params.sourceHandle?.includes('pos') || params.targetHandle?.includes('pos') ||
+        params.sourceHandle?.includes('neg') || params.targetHandle?.includes('neg')) {
         strokeColor = WIRE_COLORS.dc;
         isAnimated = true;
       }
@@ -115,6 +96,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         addEdge(
           {
             ...params,
+            type: 'deletable',
             style: { stroke: strokeColor, strokeWidth: 3 },
             animated: isAnimated,
           },
@@ -162,33 +144,32 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   );
 
   return (
-    <div 
+    <div
       ref={reactFlowWrapper}
-      className={`w-full h-full bg-background transition-all duration-200 ${
-        isDragOver ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''
-      }`}
+      className={`w-full h-full bg-background transition-all duration-200 ${isDragOver ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''
+        }`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithHandlers}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onInit={onInit}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         attributionPosition="bottom-left"
         className="bg-background"
         defaultEdgeOptions={{
           type: 'smoothstep',
         }}
-        snapToGrid
-        snapGrid={[15, 15]}
         deleteKeyCode={['Backspace', 'Delete']}
         multiSelectionKeyCode={['Control', 'Meta']}
+        connectionMode={ConnectionMode.Loose}
       >
         <Background color="#e5e7eb" gap={20} />
         <Controls className="bg-card border border-border rounded-lg" />
@@ -203,7 +184,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             return '#6b7280';
           }}
         />
-        
+
         {/* Legend Panel */}
         <Panel position="top-left" className="bg-card/90 backdrop-blur-sm p-3 rounded-lg border border-border shadow-lg">
           <h4 className="text-xs font-semibold text-foreground mb-2">Wire Colors</h4>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Zap, RotateCcw, Download, Share2, FileImage, FileText, Layout, CheckCircle, Pencil } from 'lucide-react';
+import { Zap, RotateCcw, Download, Share2, FileImage, FileText, Layout, CheckCircle, Pencil, Undo } from 'lucide-react';
 
 interface ToolbarProps {
   onGenerate: () => void;
@@ -12,10 +12,12 @@ interface ToolbarProps {
   onShare: () => void;
   onAutoArrange: () => void;
   onValidate: () => void;
+  onUndo: () => void;
   canGenerate: boolean;
   hasErrors: boolean;
   isManualMode: boolean;
   hasNodes: boolean;
+  canUndo: boolean;
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -27,42 +29,36 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onShare,
   onAutoArrange,
   onValidate,
+  onUndo,
   canGenerate,
   hasErrors,
   isManualMode,
   hasNodes,
+  canUndo,
 }) => {
   return (
     <div className="flex items-center gap-2 p-3 bg-card border-b border-border flex-wrap">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button disabled={!canGenerate || hasErrors} className="gap-2">
-            <Zap className="w-4 h-4" />
-            Generate
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={onGenerate}>
-            <Zap className="w-4 h-4 mr-2" />
-            Auto-Wire Circuit
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onGenerateNodesOnly}>
-            <Pencil className="w-4 h-4 mr-2" />
-            Practice Mode (Wire Yourself)
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        onClick={onGenerate}
+        disabled={!canGenerate || hasErrors}
+        className="gap-2"
+      >
+        <Zap className="w-4 h-4" />
+        Auto-Wire
+      </Button>
 
-      {isManualMode && hasNodes && (
+      {hasNodes && (
         <Button onClick={onValidate} variant="secondary" className="gap-2">
           <CheckCircle className="w-4 h-4" />
           Check Connections
         </Button>
       )}
 
-      <Button variant="outline" onClick={onAutoArrange} className="gap-2">
-        <Layout className="w-4 h-4" />
-        Auto-Arrange
+
+
+      <Button variant="outline" onClick={onUndo} disabled={!canUndo} className="gap-2">
+        <Undo className="w-4 h-4" />
+        Undo
       </Button>
 
       <Button variant="outline" onClick={onReset} className="gap-2">
