@@ -23,11 +23,9 @@ interface DiagramCanvasProps {
   onEdgesChange: (edges: any[]) => void;
   reactFlowRef: React.MutableRefObject<ReactFlowInstance | null>;
   onDropComponent?: (componentId: string, position: { x: number; y: number }) => void;
+  onRemoveComponent?: (nodeId: string) => void;
+  isManualMode?: boolean;
 }
-
-const nodeTypes: NodeTypes = {
-  electrical: ElectricalNode,
-};
 
 const minimapStyle = {
   height: 120,
@@ -41,16 +39,35 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   onEdgesChange: onEdgesUpdate,
   reactFlowRef,
   onDropComponent,
+  onRemoveComponent,
+  isManualMode,
 }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  
+  // Add remove handler to node data
+  const nodesWithHandlers = React.useMemo(() => 
+    initialNodes.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        onRemove: onRemoveComponent,
+      },
+    })),
+    [initialNodes, onRemoveComponent]
+  );
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(nodesWithHandlers);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [isDragOver, setIsDragOver] = useState(false);
 
+  const nodeTypes: NodeTypes = React.useMemo(() => ({
+    electrical: ElectricalNode,
+  }), []);
+
   // Sync with parent when nodes/edges change externally
   React.useEffect(() => {
-    setNodes(initialNodes);
-  }, [initialNodes, setNodes]);
+    setNodes(nodesWithHandlers);
+  }, [nodesWithHandlers, setNodes]);
 
   React.useEffect(() => {
     setEdges(initialEdges);
@@ -58,7 +75,15 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
 
   // Update parent when nodes change
   React.useEffect(() => {
-    onNodesUpdate(nodes);
+    // Strip out the onRemove handler before sending to parent
+    const cleanNodes = nodes.map(n => ({
+      ...n,
+      data: {
+        componentId: n.data.componentId,
+        label: n.data.label,
+      },
+    }));
+    onNodesUpdate(cleanNodes);
   }, [nodes, onNodesUpdate]);
 
   // Update parent when edges change
@@ -70,13 +95,20 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     (params: Connection) => {
       // Determine wire color based on terminal types
       let strokeColor: string = WIRE_COLORS.live;
+      let isAnimated = true;
+      
       if (params.sourceHandle?.includes('-n') || params.targetHandle?.includes('-n')) {
         strokeColor = WIRE_COLORS.neutral;
+        isAnimated = false;
       } else if (params.sourceHandle?.includes('-e') || params.targetHandle?.includes('-e')) {
         strokeColor = WIRE_COLORS.earth;
+        isAnimated = false;
       } else if (params.sourceHandle?.includes('dc') || params.targetHandle?.includes('dc') ||
-                 params.sourceHandle?.includes('bat') || params.targetHandle?.includes('bat')) {
+                 params.sourceHandle?.includes('bat') || params.targetHandle?.includes('bat') ||
+                 params.sourceHandle?.includes('pos') || params.targetHandle?.includes('pos') ||
+                 params.sourceHandle?.includes('neg') || params.targetHandle?.includes('neg')) {
         strokeColor = WIRE_COLORS.dc;
+        isAnimated = true;
       }
 
       setEdges((eds) =>
@@ -84,7 +116,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
           {
             ...params,
             style: { stroke: strokeColor, strokeWidth: 3 },
-            animated: strokeColor === WIRE_COLORS.live,
+            animated: isAnimated,
           },
           eds
         )
@@ -197,12 +229,25 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
 
         {/* Instructions Panel */}
         <Panel position="top-right" className="bg-card/90 backdrop-blur-sm p-3 rounded-lg border border-border shadow-lg max-w-xs">
-          <h4 className="text-xs font-semibold text-foreground mb-2">Quick Tips</h4>
+          <h4 className="text-xs font-semibold text-foreground mb-2">
+            {isManualMode ? '🎯 Practice Mode' : 'Quick Tips'}
+          </h4>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• Drag components to reposition</li>
-            <li>• Connect terminals by clicking & dragging</li>
-            <li>• Press Delete to remove selected items</li>
-            <li>• Use scroll to zoom in/out</li>
+            {isManualMode ? (
+              <>
+                <li>• Connect terminals by dragging between dots</li>
+                <li>• Match wire colors: L→L, N→N, E→E</li>
+                <li>• Hover on X to remove components</li>
+                <li>• Click "Check Connections" to validate</li>
+              </>
+            ) : (
+              <>
+                <li>• Drag components to reposition</li>
+                <li>• Connect terminals by clicking & dragging</li>
+                <li>• Hover on X to remove components</li>
+                <li>• Press Delete to remove selected items</li>
+              </>
+            )}
           </ul>
         </Panel>
 
