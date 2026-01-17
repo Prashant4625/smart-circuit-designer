@@ -42,15 +42,15 @@ const Experiments = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+        <div className="min-h-screen bg-background text-foreground flex flex-col relative">
             {/* Header */}
-            <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm p-4 sticky top-0 z-50">
+            <header className="border-b border-border bg-card/50 backdrop-blur-sm p-4 sticky top-0 z-50">
                 <div className="container mx-auto flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-slate-400 hover:text-white hover:bg-slate-800">
+                    <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hover:bg-card/60">
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <h1 className="text-xl font-bold text-yellow-400 flex items-center gap-2">
-                        <Zap className="h-5 w-5" /> Standard Experiments
+                    <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Zap className="h-5 w-5 text-primary" /> Standard Experiments
                     </h1>
                 </div>
             </header>
@@ -59,9 +59,9 @@ const Experiments = () => {
             <main className="container mx-auto px-4 py-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {experiments.map((exp) => (
-                        <Card key={exp.id} className="bg-slate-900 border-slate-800 hover:border-yellow-400/50 transition-colors group flex flex-col overflow-hidden">
+                        <Card key={exp.id} className="bg-card border border-border hover:border-primary/50 transition-colors group flex flex-col overflow-hidden shadow-lg">
                             {exp.image && (
-                                <div className="w-full bg-white p-4">
+                                <div className="w-full bg-card p-4">
                                     <AspectRatio ratio={16 / 9}>
                                         <img
                                             src={exp.image}
@@ -74,7 +74,7 @@ const Experiments = () => {
 
                             <CardHeader>
                                 <div className="flex justify-between items-start">
-                                    <CardTitle className="text-white group-hover:text-yellow-400 transition-colors text-lg">{exp.title}</CardTitle>
+                                    <CardTitle className="text-foreground group-hover:text-primary transition-colors text-lg">{exp.title}</CardTitle>
                                     <Badge variant="outline" className={`
                     ${exp.difficulty === 'Beginner' ? 'border-green-500 text-green-500' :
                                             exp.difficulty === 'Intermediate' ? 'border-yellow-500 text-yellow-500' :
@@ -83,18 +83,18 @@ const Experiments = () => {
                                         {exp.difficulty}
                                     </Badge>
                                 </div>
-                                <CardDescription className="text-slate-400">{exp.description}</CardDescription>
+                                <CardDescription className="text-muted-foreground">{exp.description}</CardDescription>
                             </CardHeader>
 
                             <CardContent className="flex-1">
                                 {exp.components && (
-                                    <div className="bg-slate-950/50 p-3 rounded-md border border-slate-800">
-                                        <p className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1">
+                                    <div className="bg-card/60 p-3 rounded-md border border-border">
+                                        <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
                                             <Info className="w-3 h-3" /> REQUIRED COMPONENTS
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                             {exp.components.map((comp, i) => (
-                                                <span key={i} className="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded">
+                                                <span key={i} className="text-xs bg-card/80 text-muted-foreground px-2 py-1 rounded">
                                                     {comp}
                                                 </span>
                                             ))}
@@ -105,7 +105,7 @@ const Experiments = () => {
 
                             <CardFooter>
                                 <Button
-                                    className="w-full bg-slate-800 hover:bg-yellow-500 hover:text-slate-950 text-white border border-slate-700 hover:border-yellow-500 transition-all"
+                                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 border border-border hover:border-primary transition-all shadow-md"
                                     onClick={() => handleStartExperiment(exp)}
                                 >
                                     <Play className="mr-2 h-4 w-4" /> Start Experiment

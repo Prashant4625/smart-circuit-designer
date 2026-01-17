@@ -14,329 +14,301 @@ export interface CorrectConnection {
   targetHandle: string;
   wireType: 'live' | 'neutral' | 'earth' | 'dc';
   description: string;
-  isOptional?: boolean;
 }
 
-// Get all correct connections based on current nodes (supports multiple instances)
-export function getCorrectConnections(nodes: Node[], wiringMode: 'series' | 'parallel' | 'all' = 'all'): CorrectConnection[] {
+// Get all correct connections based on selected components
+export function getCorrectConnections(selectedComponentIds: string[]): CorrectConnection[] {
   const connections: CorrectConnection[] = [];
+  
+  const hasSupply = selectedComponentIds.includes('power-supply');
+  const hasMCB = selectedComponentIds.includes('mcb');
+  const hasDB = selectedComponentIds.includes('distribution-board');
+  const hasSwitch = selectedComponentIds.includes('switch');
+  const hasRegulator = selectedComponentIds.includes('regulator');
+  const hasFan = selectedComponentIds.includes('fan');
+  const hasInverter = selectedComponentIds.includes('inverter');
+  const hasBattery = selectedComponentIds.includes('battery');
+  const hasLightBulb = selectedComponentIds.includes('light-bulb');
+  const hasLightTube = selectedComponentIds.includes('light-tube');
+  const hasSocket5A = selectedComponentIds.includes('socket-5a');
+  const hasSocket15A = selectedComponentIds.includes('socket-15a');
 
-  // Helper to find nodes by type
-  const getNodes = (id: string) => nodes.filter(n => n.data.componentId === id);
-
-  const supplies = getNodes('power-supply');
-  const mcbs = getNodes('mcb');
-  const dbs = getNodes('distribution-board');
-  const switches = getNodes('switch');
-  const regulators = getNodes('regulator');
-  const fans = getNodes('fan');
-  const inverters = getNodes('inverter');
-  const batteries = getNodes('battery');
-  const bulbs = getNodes('light-bulb');
-  const tubes = getNodes('light-tube');
-  const sockets5A = getNodes('socket-5a');
-  const sockets15A = getNodes('socket-15a');
-
-  const hasSupply = supplies.length > 0;
-  const hasMCB = mcbs.length > 0;
-  const hasDB = dbs.length > 0;
-  const hasSwitch = switches.length > 0;
-
-  // --- 1. Establish Power Backbone ---
-  // We assume single backbone for now, connecting first instances found
-  const supply = supplies[0];
-  const mcb = mcbs[0];
-  const db = dbs[0];
-
-  if (supply && mcb) {
-    connections.push(
-      { source: supply.id, sourceHandle: 'supply-l', target: mcb.id, targetHandle: 'mcb-in-l', wireType: 'live', description: 'Main Supply Live to MCB Input' }
-      // Removed MCB Neutral Return to Supply (Neutral bypasses MCB)
-    );
-  }
-
-  if (mcb && db) {
-    connections.push(
-      { source: mcb.id, sourceHandle: 'mcb-out-l', target: db.id, targetHandle: 'db-in-l', wireType: 'live', description: 'MCB Output Live to DB Input' }
-      // Removed DB Neutral Return to MCB (Neutral bypasses MCB)
-    );
-  } else if (supply && db && !mcb) {
-    connections.push(
-      { source: supply.id, sourceHandle: 'supply-l', target: db.id, targetHandle: 'db-in-l', wireType: 'live', description: 'Supply Live to DB Input' }
-    );
-  }
-
-  // Direct Neutral Path: Supply -> DB
-  if (supply && db) {
-    connections.push(
-      { source: db.id, sourceHandle: 'db-in-n', target: supply.id, targetHandle: 'supply-n', wireType: 'neutral', description: 'DB Neutral Return to Supply' }
-    );
-  }
-
-  if (supply && db) {
-    connections.push(
-      { source: db.id, sourceHandle: 'db-e', target: supply.id, targetHandle: 'supply-e', wireType: 'earth', description: 'DB Earth Return to Supply' }
-    );
-  }
-
-  // --- 2. Determine Active Power Source ---
-  let liveSourceId = '';
-  let liveSourceHandle = '';
-  let neutralReturnId = '';
-  let neutralReturnHandle = '';
-  let earthReturnId = '';
-  let earthReturnHandle = '';
-
-  if (db) {
-    liveSourceId = db.id; liveSourceHandle = 'db-out-l1';
-    neutralReturnId = db.id; neutralReturnHandle = 'db-out-n';
-    earthReturnId = db.id; earthReturnHandle = 'db-e';
-  } else if (mcb) {
-    liveSourceId = mcb.id; liveSourceHandle = 'mcb-out-l';
-    // Neutral bypasses MCB, so if MCB is present but no DB, Neutral comes from Supply
-    if (supply) {
-      neutralReturnId = supply.id; neutralReturnHandle = 'supply-n';
-      earthReturnId = supply.id; earthReturnHandle = 'supply-e';
-    }
-  } else if (supply) {
-    liveSourceId = supply.id; liveSourceHandle = 'supply-l';
-    neutralReturnId = supply.id; neutralReturnHandle = 'supply-n';
-    earthReturnId = supply.id; earthReturnHandle = 'supply-e';
-  }
-
-  // --- 3. Control Circuits ---
-  // Connect all switches to power
-  // --- 3. Control Circuits & Load Connections ---
-  // Connect all switches to power
-  switches.forEach(sw => {
-    if (liveSourceId) {
-      connections.push(
-        { source: liveSourceId, sourceHandle: liveSourceHandle, target: sw.id, targetHandle: 'sw-in', wireType: 'live', description: 'Power to Switch Input' }
-      );
-    }
-  });
-
-  const mainSwitch = switches[0];
-  const activeLiveSourceId = mainSwitch ? mainSwitch.id : liveSourceId;
-  const activeLiveSourceHandle = mainSwitch ? 'sw-out' : (liveSourceHandle === 'db-out-l1' ? 'db-out-l2' : liveSourceHandle);
-
-  // Collect all loads
-  const allLoads: { id: string, type: string, prefix: string }[] = [];
-
-  const addLoad = (nodes: Node[], prefix: string) => {
-    nodes.forEach(n => allLoads.push({ id: n.id, type: n.data.componentId, prefix }));
-  };
-
-  addLoad(fans, 'fan');
-  addLoad(bulbs, 'bulb');
-  addLoad(tubes, 'tube');
-  addLoad(sockets5A, 'sock5');
-  addLoad(sockets15A, 'sock15');
-
-  // --- WIRING LOGIC BASED ON MODE ---
-
-  // 1. Parallel Wiring (Default for 'parallel' or 'all')
-  // In Parallel, EVERY load gets direct Live and Neutral
-  if (wiringMode === 'parallel' || wiringMode === 'all') {
-    allLoads.forEach(load => {
-      // Live Connection
-      if (activeLiveSourceId) {
-        // Special case for Fan with Regulator
-        if (load.type === 'fan' && regulators.length > 0) {
-          // Logic handled below for regulator, or assume direct if complex
-          // For simplicity in this refactor, we'll keep the regulator logic separate or integrate it.
-          // Let's integrate: Find a regulator for this fan
-          const fanIndex = fans.findIndex(f => f.id === load.id);
-          const regulator = regulators[fanIndex];
-
-          if (regulator && mainSwitch) {
-            connections.push(
-              { source: mainSwitch.id, sourceHandle: 'sw-out', target: regulator.id, targetHandle: 'reg-in', wireType: 'live', description: 'Switch to Regulator' },
-              { source: regulator.id, sourceHandle: 'reg-out', target: load.id, targetHandle: 'fan-l', wireType: 'live', description: 'Regulator to Fan' }
-            );
-          } else {
-            connections.push(
-              { source: activeLiveSourceId, sourceHandle: activeLiveSourceHandle, target: load.id, targetHandle: `${load.prefix}-l`, wireType: 'live', description: 'Power to Load' }
-            );
-          }
-        } else {
-          connections.push(
-            { source: activeLiveSourceId, sourceHandle: activeLiveSourceHandle, target: load.id, targetHandle: `${load.prefix}-l`, wireType: 'live', description: 'Power to Load' }
-          );
-        }
-      }
-
-      // Neutral Return
-      if (neutralReturnId) {
-        connections.push(
-          { source: load.id, sourceHandle: `${load.prefix}-n`, target: neutralReturnId, targetHandle: neutralReturnHandle, wireType: 'neutral', description: 'Neutral Return' }
-        );
-      }
-
-      // Earth Return
-      if (earthReturnId && load.prefix !== 'bulb') {
-        connections.push(
-          { source: load.id, sourceHandle: `${load.prefix}-e`, target: earthReturnId, targetHandle: earthReturnHandle, wireType: 'earth', description: 'Earth Connection' }
-        );
-      }
+  // Power Supply to MCB - Main circuit
+  if (hasSupply && hasMCB) {
+    connections.push({
+      source: 'power-supply',
+      sourceHandle: 'supply-l',
+      target: 'mcb',
+      targetHandle: 'mcb-in-l',
+      wireType: 'live',
+      description: 'AC Supply live to MCB input',
+    });
+    connections.push({
+      source: 'power-supply',
+      sourceHandle: 'supply-n',
+      target: 'mcb',
+      targetHandle: 'mcb-in-n',
+      wireType: 'neutral',
+      description: 'AC Supply neutral to MCB neutral input',
     });
   }
 
-  // 2. Series Wiring
-  // In Series, devices are daisy-chained.
-  // Source Live -> Load 1 Live
-  // Load 1 Neutral -> Load 2 Live
-  // ...
-  // Load N Neutral -> Source Neutral
-  if (wiringMode === 'series') {
-    if (allLoads.length > 0) {
-      // Sort loads to ensure consistent order (e.g. by Y position or just ID)
-      // For now, we use the order they were added (Fans -> Bulbs -> Tubes -> Sockets)
+  // MCB to Distribution Board
+  if (hasMCB && hasDB) {
+    connections.push({
+      source: 'mcb',
+      sourceHandle: 'mcb-out-l',
+      target: 'distribution-board',
+      targetHandle: 'db-in-l',
+      wireType: 'live',
+      description: 'MCB output to Distribution Board live input',
+    });
+    connections.push({
+      source: 'mcb',
+      sourceHandle: 'mcb-out-n',
+      target: 'distribution-board',
+      targetHandle: 'db-in-n',
+      wireType: 'neutral',
+      description: 'MCB neutral output to Distribution Board neutral input',
+    });
+  }
 
-      // 1. Connect First Load to Source Live
-      const firstLoad = allLoads[0];
-      if (activeLiveSourceId) {
-        // Fan/Regulator check for first load
-        if (firstLoad.type === 'fan' && regulators.length > 0) {
-          const regulator = regulators[0]; // Assume first regulator for first fan
-          if (regulator && mainSwitch) {
-            connections.push(
-              { source: mainSwitch.id, sourceHandle: 'sw-out', target: regulator.id, targetHandle: 'reg-in', wireType: 'live', description: 'Switch to Regulator' },
-              { source: regulator.id, sourceHandle: 'reg-out', target: firstLoad.id, targetHandle: 'fan-l', wireType: 'live', description: 'Regulator to First Fan' }
-            );
-          } else {
-            connections.push(
-              { source: activeLiveSourceId, sourceHandle: activeLiveSourceHandle, target: firstLoad.id, targetHandle: `${firstLoad.prefix}-l`, wireType: 'live', description: 'Power to First Load' }
-            );
-          }
-        } else {
-          connections.push(
-            { source: activeLiveSourceId, sourceHandle: activeLiveSourceHandle, target: firstLoad.id, targetHandle: `${firstLoad.prefix}-l`, wireType: 'live', description: 'Power to First Load' }
-          );
-        }
-      }
+  // Power Supply Earth to Distribution Board
+  if (hasSupply && hasDB) {
+    connections.push({
+      source: 'power-supply',
+      sourceHandle: 'supply-e',
+      target: 'distribution-board',
+      targetHandle: 'db-e',
+      wireType: 'earth',
+      description: 'AC Supply earth to Distribution Board earth',
+    });
+  }
 
-      // 2. Daisy Chain (Load i Neutral -> Load i+1 Live)
-      for (let i = 0; i < allLoads.length - 1; i++) {
-        const current = allLoads[i];
-        const next = allLoads[i + 1];
-        connections.push(
-          { source: current.id, sourceHandle: `${current.prefix}-n`, target: next.id, targetHandle: `${next.prefix}-l`, wireType: 'live', description: 'Series Connection (Daisy Chain)' }
-        );
-      }
+  // Distribution Board to Switch
+  if (hasDB && hasSwitch) {
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-l1',
+      target: 'switch',
+      targetHandle: 'sw-in',
+      wireType: 'live',
+      description: 'Distribution Board live to Switch input',
+    });
+  }
 
-      // 3. Connect Last Load to Source Neutral
-      const lastLoad = allLoads[allLoads.length - 1];
-      if (neutralReturnId) {
-        connections.push(
-          { source: lastLoad.id, sourceHandle: `${lastLoad.prefix}-n`, target: neutralReturnId, targetHandle: neutralReturnHandle, wireType: 'neutral', description: 'Series Return to Neutral' }
-        );
-      }
+  // Switch to Regulator (for fan)
+  if (hasSwitch && hasRegulator) {
+    connections.push({
+      source: 'switch',
+      sourceHandle: 'sw-out',
+      target: 'regulator',
+      targetHandle: 'reg-in',
+      wireType: 'live',
+      description: 'Switch output to Regulator input',
+    });
+  }
 
-      // 4. Earth Connections (Always Parallel/Direct)
-      allLoads.forEach(load => {
-        if (earthReturnId && load.prefix !== 'bulb') {
-          connections.push(
-            { source: load.id, sourceHandle: `${load.prefix}-e`, target: earthReturnId, targetHandle: earthReturnHandle, wireType: 'earth', description: 'Earth Connection' }
-          );
-        }
+  // Regulator to Fan - closed circuit
+  if (hasRegulator && hasFan) {
+    connections.push({
+      source: 'regulator',
+      sourceHandle: 'reg-out',
+      target: 'fan',
+      targetHandle: 'fan-l',
+      wireType: 'live',
+      description: 'Regulator output to Fan live terminal',
+    });
+    
+    if (hasDB) {
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-out-n',
+        target: 'fan',
+        targetHandle: 'fan-n',
+        wireType: 'neutral',
+        description: 'Distribution Board neutral to Fan neutral (return path)',
+      });
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-e',
+        target: 'fan',
+        targetHandle: 'fan-e',
+        wireType: 'earth',
+        description: 'Distribution Board earth to Fan earth (safety ground)',
       });
     }
   }
 
-  // Backup Power (Inverter/Battery) - Keep existing logic
-  const battery = batteries[0];
-  const inverter = inverters[0];
-  if (battery && inverter) {
-    connections.push(
-      { source: battery.id, sourceHandle: 'bat-pos', target: inverter.id, targetHandle: 'inv-dc-pos', wireType: 'dc', description: 'Battery Positive to Inverter DC+' },
-      { source: inverter.id, sourceHandle: 'inv-dc-neg', target: 'battery', targetHandle: 'bat-neg', wireType: 'dc', description: 'Inverter DC- Return to Battery' }
-    );
+  // Light connections - closed circuits
+  if (hasLightBulb) {
+    if (hasSwitch && !hasRegulator) {
+      connections.push({
+        source: 'switch',
+        sourceHandle: 'sw-out',
+        target: 'light-bulb',
+        targetHandle: 'bulb-l',
+        wireType: 'live',
+        description: 'Switch output to Light Bulb live',
+      });
+    } else if (hasDB && !hasSwitch) {
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-out-l2',
+        target: 'light-bulb',
+        targetHandle: 'bulb-l',
+        wireType: 'live',
+        description: 'Distribution Board live to Light Bulb',
+      });
+    }
+    if (hasDB) {
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-out-n',
+        target: 'light-bulb',
+        targetHandle: 'bulb-n',
+        wireType: 'neutral',
+        description: 'Distribution Board neutral to Light Bulb neutral (return path)',
+      });
+    }
   }
 
-  if (inverter && liveSourceId) {
-    connections.push(
-      { source: liveSourceId, sourceHandle: liveSourceHandle, target: 'inverter', targetHandle: 'inv-ac-in-l', wireType: 'live', description: 'Power to Inverter AC Input' }
-    );
-    if (neutralReturnId) {
-      connections.push(
-        { source: 'inverter', sourceHandle: 'inv-ac-in-n', target: neutralReturnId, targetHandle: neutralReturnHandle, wireType: 'neutral', description: 'Inverter Neutral Return' }
-      );
+  if (hasLightTube) {
+    if (hasSwitch && !hasRegulator) {
+      connections.push({
+        source: 'switch',
+        sourceHandle: 'sw-out',
+        target: 'light-tube',
+        targetHandle: 'tube-l',
+        wireType: 'live',
+        description: 'Switch output to Tube Light live',
+      });
+    } else if (hasDB && !hasSwitch) {
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-out-l2',
+        target: 'light-tube',
+        targetHandle: 'tube-l',
+        wireType: 'live',
+        description: 'Distribution Board live to Tube Light',
+      });
     }
+    if (hasDB) {
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-out-n',
+        target: 'light-tube',
+        targetHandle: 'tube-n',
+        wireType: 'neutral',
+        description: 'Distribution Board neutral to Tube Light neutral (return path)',
+      });
+      connections.push({
+        source: 'distribution-board',
+        sourceHandle: 'db-e',
+        target: 'light-tube',
+        targetHandle: 'tube-e',
+        wireType: 'earth',
+        description: 'Distribution Board earth to Tube Light earth (safety ground)',
+      });
+    }
+  }
+
+  // Socket connections - closed circuits
+  if (hasSocket5A && hasDB) {
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-l2',
+      target: 'socket-5a',
+      targetHandle: 'sock5-l',
+      wireType: 'live',
+      description: 'Distribution Board live to 5A Socket live',
+    });
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-n',
+      target: 'socket-5a',
+      targetHandle: 'sock5-n',
+      wireType: 'neutral',
+      description: 'Distribution Board neutral to 5A Socket neutral (return path)',
+    });
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-e',
+      target: 'socket-5a',
+      targetHandle: 'sock5-e',
+      wireType: 'earth',
+      description: 'Distribution Board earth to 5A Socket earth (safety ground)',
+    });
+  }
+
+  if (hasSocket15A && hasDB) {
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-l2',
+      target: 'socket-15a',
+      targetHandle: 'sock15-l',
+      wireType: 'live',
+      description: 'Distribution Board live to 15A Socket live',
+    });
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-n',
+      target: 'socket-15a',
+      targetHandle: 'sock15-n',
+      wireType: 'neutral',
+      description: 'Distribution Board neutral to 15A Socket neutral (return path)',
+    });
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-e',
+      target: 'socket-15a',
+      targetHandle: 'sock15-e',
+      wireType: 'earth',
+      description: 'Distribution Board earth to 15A Socket earth (safety ground)',
+    });
+  }
+
+  // Battery to Inverter (DC connections)
+  if (hasBattery && hasInverter) {
+    connections.push({
+      source: 'battery',
+      sourceHandle: 'bat-pos',
+      target: 'inverter',
+      targetHandle: 'inv-dc-pos',
+      wireType: 'dc',
+      description: 'Battery positive to Inverter DC+ (power input)',
+    });
+    connections.push({
+      source: 'battery',
+      sourceHandle: 'bat-neg',
+      target: 'inverter',
+      targetHandle: 'inv-dc-neg',
+      wireType: 'dc',
+      description: 'Battery negative to Inverter DC- (return path)',
+    });
+  }
+
+  // Inverter AC connections
+  if (hasInverter && hasDB) {
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-l1',
+      target: 'inverter',
+      targetHandle: 'inv-ac-in-l',
+      wireType: 'live',
+      description: 'Distribution Board live to Inverter AC input',
+    });
+    connections.push({
+      source: 'distribution-board',
+      sourceHandle: 'db-out-n',
+      target: 'inverter',
+      targetHandle: 'inv-ac-in-n',
+      wireType: 'neutral',
+      description: 'Distribution Board neutral to Inverter AC neutral',
+    });
   }
 
   return connections;
-}
-
-// Check if the circuit is a closed loop (Source -> Load -> Source)
-export function validateCircuitClosure(edges: Edge[], nodes: Node[]): { isClosed: boolean; message: string } {
-  const supplyNode = nodes.find(n => n.data.componentId === 'power-supply');
-  if (!supplyNode) return { isClosed: false, message: "No Power Supply found." };
-
-  // Identify Load Nodes (components that consume power)
-  const loadTypes = ['fan', 'light-bulb', 'light-tube', 'socket-5a', 'socket-15a', 'inverter'];
-  const loadNodes = nodes.filter(n => loadTypes.includes(n.data.componentId));
-
-  if (loadNodes.length === 0) {
-    return { isClosed: true, message: "No loads to power." };
-  }
-
-  // Build Directed Adjacency List
-  const adj = new Map<string, string[]>();
-  edges.forEach(edge => {
-    // Ignore Earth connections for power flow check
-    const isEarth = edge.sourceHandle?.includes('-e') || edge.targetHandle?.includes('-e') ||
-      edge.sourceHandle?.includes('earth') || edge.targetHandle?.includes('earth');
-
-    if (isEarth) return;
-
-    if (!adj.has(edge.source)) adj.set(edge.source, []);
-    adj.get(edge.source)?.push(edge.target);
-  });
-
-  // Helper for BFS
-  const getReachable = (startId: string) => {
-    const visited = new Set<string>();
-    const queue = [startId];
-    visited.add(startId);
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      const neighbors = adj.get(current) || [];
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          visited.add(neighbor);
-          queue.push(neighbor);
-        }
-      }
-    }
-    return visited;
-  };
-
-  // 1. Forward Check: Supply -> Loads
-  const reachableFromSupply = getReachable(supplyNode.id);
-  const unpoweredLoads = loadNodes.filter(n => !reachableFromSupply.has(n.id));
-
-  if (unpoweredLoads.length > 0) {
-    return {
-      isClosed: false,
-      message: `Open Circuit! Power does not reach: ${unpoweredLoads.map(n => n.data.label).join(', ')}`
-    };
-  }
-
-  // 2. Return Check: Loads -> Supply
-  const unreturnedLoads = loadNodes.filter(n => {
-    const reachableFromLoad = getReachable(n.id);
-    return !reachableFromLoad.has(supplyNode.id);
-  });
-
-  if (unreturnedLoads.length > 0) {
-    return {
-      isClosed: false,
-      message: `Open Circuit! Return path missing for: ${unreturnedLoads.map(n => n.data.label).join(', ')}`
-    };
-  }
-
-  return { isClosed: true, message: "Circuit is Closed and Complete." };
 }
 
 // Validate user connections against correct connections
@@ -348,48 +320,46 @@ export interface ConnectionValidationResult {
   correctEdges: Edge[];
   score: number;
   totalExpected: number;
-  circuitStatus: { isClosed: boolean; message: string };
 }
 
 export function validateUserConnections(
   edges: Edge[],
   nodes: Node[],
-  wiringMode: 'series' | 'parallel' | 'all' = 'all'
 ): ConnectionValidationResult {
-  const correctConnections = getCorrectConnections(nodes, wiringMode);
-
+  const selectedComponentIds = nodes.map(n => n.data.componentId);
+  const correctConnections = getCorrectConnections(selectedComponentIds);
+  
   const correctEdges: Edge[] = [];
   const incorrectEdges: { edge: Edge; reason: string; suggestion?: CorrectConnection }[] = [];
   const foundConnections = new Set<string>();
-
-  // Helper to check if two handles are compatible (e.g. L to L, N to N)
-  // or if they form a valid circuit path (e.g. Switch Out to Load L)
-
+  
+  // Check each user edge
   edges.forEach(edge => {
+    // Find the actual component IDs from node IDs
     const sourceNode = nodes.find(n => n.id === edge.source);
     const targetNode = nodes.find(n => n.id === edge.target);
-
+    
     if (!sourceNode || !targetNode) return;
-
+    
     const sourceComponentId = sourceNode.data.componentId;
     const targetComponentId = targetNode.data.componentId;
-
-    // Direct match check
-    const matchingCorrect = correctConnections.find(cc =>
-      cc.source === edge.source &&
-      cc.target === edge.target &&
+    
+    // Check if this matches any correct connection
+    const matchingCorrect = correctConnections.find(cc => 
+      cc.source === sourceComponentId &&
+      cc.target === targetComponentId &&
       cc.sourceHandle === edge.sourceHandle &&
       cc.targetHandle === edge.targetHandle
     );
-
-    // Reverse match check (if user drew line backwards but electrically valid)
+    
+    // Also check reverse direction (some connections can be bidirectional)
     const matchingCorrectReverse = correctConnections.find(cc =>
-      cc.source === edge.target &&
-      cc.target === edge.source &&
+      cc.source === targetComponentId &&
+      cc.target === sourceComponentId &&
       cc.sourceHandle === edge.targetHandle &&
       cc.targetHandle === edge.sourceHandle
     );
-
+    
     if (matchingCorrect) {
       correctEdges.push(edge);
       foundConnections.add(`${matchingCorrect.source}-${matchingCorrect.sourceHandle}-${matchingCorrect.target}-${matchingCorrect.targetHandle}`);
@@ -397,62 +367,38 @@ export function validateUserConnections(
       correctEdges.push(edge);
       foundConnections.add(`${matchingCorrectReverse.source}-${matchingCorrectReverse.sourceHandle}-${matchingCorrectReverse.target}-${matchingCorrectReverse.targetHandle}`);
     } else {
-      // Analyze why it's wrong
-      let reason = "Invalid Connection";
-      let suggestion: CorrectConnection | undefined;
-
-      // Check for Polarity Mismatch (e.g. Live to Neutral)
-      const isSourceLive = edge.sourceHandle?.includes('l') || edge.sourceHandle?.includes('pos');
-      const isTargetNeutral = edge.targetHandle?.includes('n') || edge.targetHandle?.includes('neg');
-      const isSourceNeutral = edge.sourceHandle?.includes('n') || edge.sourceHandle?.includes('neg');
-      const isTargetLive = edge.targetHandle?.includes('l') || edge.targetHandle?.includes('pos');
-
-      if ((isSourceLive && isTargetNeutral) || (isSourceNeutral && isTargetLive)) {
-        reason = "Short Circuit! You connected Live/Positive to Neutral/Negative.";
-      } else {
-        // Find what SHOULD be connected to these handles
-        const suggestionForSource = correctConnections.find(cc =>
-          cc.source === edge.source && cc.sourceHandle === edge.sourceHandle
-        );
-        const suggestionForTarget = correctConnections.find(cc =>
-          cc.target === edge.target && cc.targetHandle === edge.targetHandle
-        );
-
-        if (suggestionForSource) {
-          // Find the node to get its label for the message
-          const suggestedTargetNode = nodes.find(n => n.id === suggestionForSource.target);
-          const targetName = suggestedTargetNode?.data.label || suggestionForSource.target;
-          reason = `This terminal should connect to ${targetName} (${suggestionForSource.targetHandle})`;
-          suggestion = suggestionForSource;
-        } else if (suggestionForTarget) {
-          // Find the node to get its label for the message
-          const suggestedSourceNode = nodes.find(n => n.id === suggestionForTarget.source);
-          const sourceName = suggestedSourceNode?.data.label || suggestionForTarget.source;
-          reason = `This terminal should receive connection from ${sourceName} (${suggestionForTarget.sourceHandle})`;
-          suggestion = suggestionForTarget;
-        } else {
-          reason = "This connection doesn't make sense in this circuit.";
-        }
+      // Find a suggestion for what should connect to this component
+      const suggestionForSource = correctConnections.find(cc => 
+        cc.source === sourceComponentId && cc.sourceHandle === edge.sourceHandle
+      );
+      const suggestionForTarget = correctConnections.find(cc =>
+        cc.target === targetComponentId && cc.targetHandle === edge.targetHandle
+      );
+      
+      let reason = `Invalid connection from ${sourceComponentId} to ${targetComponentId}`;
+      if (suggestionForSource) {
+        reason = `${edge.sourceHandle} should connect to ${suggestionForSource.target} (${suggestionForSource.targetHandle})`;
+      } else if (suggestionForTarget) {
+        reason = `${edge.targetHandle} should receive connection from ${suggestionForTarget.source} (${suggestionForTarget.sourceHandle})`;
       }
-
+      
       incorrectEdges.push({
         edge,
         reason,
-        suggestion,
+        suggestion: suggestionForSource || suggestionForTarget,
       });
     }
   });
-
-  const missingConnections = correctConnections.filter(cc =>
+  
+  // Find missing connections
+  const missingConnections = correctConnections.filter(cc => 
     !foundConnections.has(`${cc.source}-${cc.sourceHandle}-${cc.target}-${cc.targetHandle}`)
   );
-
-  const circuitStatus = validateCircuitClosure(edges, nodes);
-
+  
   const totalExpected = correctConnections.length;
   const score = correctEdges.length;
-  const isValid = incorrectEdges.length === 0 && missingConnections.length === 0 && circuitStatus.isClosed;
-
+  const isValid = incorrectEdges.length === 0 && missingConnections.length === 0;
+  
   return {
     isValid,
     correctConnections,
@@ -461,116 +407,165 @@ export function validateUserConnections(
     correctEdges,
     score,
     totalExpected,
-    circuitStatus
   };
 }
 
-export function generateWiringDiagram(selectedComponentIds: string[], existingNodes?: Node[]): WiringResult {
+export function generateWiringDiagram(selectedComponentIds: string[]): WiringResult {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
 
-  // 1. Determine which components to layout
-  // If existingNodes is provided, use them (preserving IDs and data)
-  // Otherwise, create new nodes from selectedComponentIds
-  let componentsToLayout: { id: string, type: string, label: string, originalNode?: Node }[] = [];
+  // Get selected components
+  const selectedComponents = selectedComponentIds
+    .map(id => ELECTRICAL_COMPONENTS.find(c => c.id === id))
+    .filter(Boolean);
 
-  if (existingNodes && existingNodes.length > 0) {
-    componentsToLayout = existingNodes.map(n => ({
-      id: n.id,
-      type: n.data.componentId,
-      label: n.data.label,
-      originalNode: n
-    }));
-  } else {
-    selectedComponentIds.forEach((id, index) => {
-      const component = ELECTRICAL_COMPONENTS.find(c => c.id === id);
-      if (!component) return;
-      componentsToLayout.push({
-        id: `${id}-${Date.now()}-${index}`,
-        type: id,
-        label: component.name
-      });
-    });
+  if (selectedComponents.length === 0) {
+    return { nodes, edges };
   }
 
-  // 2. Define Layout Columns
-  const columns: Record<string, number> = {
-    'power-supply': 0,
-    'battery': 0,
-    'mcb': 1,
-    'inverter': 1,
-    'distribution-board': 2,
-    'switch': 3,
-    'regulator': 3,
-    'light-bulb': 4,
-    'light-tube': 4,
-    'fan': 4,
-    'socket-5a': 4,
-    'socket-15a': 4
-  };
+  const hasSupply = selectedComponentIds.includes('power-supply');
+  const hasMCB = selectedComponentIds.includes('mcb');
+  const hasDB = selectedComponentIds.includes('distribution-board');
+  const hasSwitch = selectedComponentIds.includes('switch');
+  const hasRegulator = selectedComponentIds.includes('regulator');
+  const hasFan = selectedComponentIds.includes('fan');
+  const hasLightTube = selectedComponentIds.includes('light-tube');
+  const hasLightBulb = selectedComponentIds.includes('light-bulb');
+  const hasInverter = selectedComponentIds.includes('inverter');
+  const hasBattery = selectedComponentIds.includes('battery');
 
-  const columnXStart = 100;
-  const columnGap = 250;
-  const rowYStart = 100;
-  const rowGap = 200;
-
-  // Track current Y position for each column
-  const columnY: Record<number, number> = { 0: rowYStart, 1: rowYStart, 2: rowYStart, 3: rowYStart, 4: rowYStart };
-
-  // 3. Position Nodes
-  componentsToLayout.forEach(comp => {
-    const colIndex = columns[comp.type] ?? 4; // Default to last column
-    const x = columnXStart + (colIndex * columnGap);
-    const y = columnY[colIndex];
-
-    // Update Y for next item in this column
-    columnY[colIndex] += rowGap;
-
-    if (comp.originalNode) {
-      nodes.push({
-        ...comp.originalNode,
-        position: { x, y }
-      });
-    } else {
-      nodes.push({
-        id: comp.id,
-        type: 'electrical',
-        position: { x, y },
-        data: {
-          componentId: comp.type,
-          label: comp.label,
-        },
-      });
+  // Layout for closed circuit visualization
+  // Power source at far left, MCB, DB, controls in middle, load at top
+  // This creates a visual "loop" like traditional circuit diagrams
+  
+  const layoutPositions: Record<string, { x: number; y: number }> = {};
+  
+  // Determine layout based on components
+  if (hasFan && hasSwitch && hasRegulator) {
+    // Fan circuit layout with power supply
+    // Power supply at left, MCB and DB flow right, Fan at top, controls at bottom
+    layoutPositions['power-supply'] = { x: 0, y: 175 };
+    layoutPositions['mcb'] = { x: 100, y: 100 };
+    layoutPositions['distribution-board'] = { x: 100, y: 250 };
+    layoutPositions['fan'] = { x: 350, y: 50 };
+    layoutPositions['switch'] = { x: 200, y: 350 };
+    layoutPositions['regulator'] = { x: 450, y: 350 };
+  } else if (hasLightTube && hasSwitch) {
+    // Tube light circuit layout (like reference image)
+    // Power supply on left, MCB below it, Switch in middle, Tube light on right
+    layoutPositions['power-supply'] = { x: 0, y: 100 };
+    layoutPositions['mcb'] = { x: 0, y: 200 };
+    layoutPositions['switch'] = { x: 200, y: 150 };
+    layoutPositions['light-tube'] = { x: 400, y: 100 };
+    layoutPositions['distribution-board'] = { x: 200, y: 300 };
+  } else if (hasLightBulb && hasSwitch) {
+    // Light bulb circuit layout
+    // Power supply on left, MCB below it, Switch in middle, Light bulb on right
+    layoutPositions['power-supply'] = { x: 0, y: 100 };
+    layoutPositions['mcb'] = { x: 0, y: 200 };
+    layoutPositions['switch'] = { x: 200, y: 150 };
+    layoutPositions['light-bulb'] = { x: 400, y: 100 };
+    layoutPositions['distribution-board'] = { x: 200, y: 300 };
+  } else {
+    // Generic layout - arrange in circuit flow pattern (left to right)
+    // Power supply → MCB → DB → Controls → Loads
+    
+    let xSupply = 0;
+    let xPower = 80;
+    let xControl = 200;
+    let xLoad = 350;
+    let supplyY = 150;
+    let powerY = 150;
+    let switchY = 150;
+    let loadY = 150;
+    
+    // Position power supply at far left
+    if (hasSupply) {
+      layoutPositions['power-supply'] = { x: xSupply, y: supplyY };
     }
+    
+    // Position power components after supply
+    if (hasMCB) {
+      layoutPositions['mcb'] = { x: xPower, y: powerY };
+    }
+    if (hasDB) {
+      layoutPositions['distribution-board'] = { x: xPower, y: powerY + 120 };
+    }
+    
+    // Position control components in middle
+    let controlCount = 0;
+    if (hasSwitch) {
+      layoutPositions['switch'] = { x: xControl + controlCount * 100, y: switchY };
+      controlCount++;
+    }
+    if (hasRegulator) {
+      layoutPositions['regulator'] = { x: xControl + controlCount * 100, y: switchY };
+      controlCount++;
+    }
+    
+    // Position load components to the right
+    let loadCount = 0;
+    const loadComponents = ['fan', 'light-bulb', 'light-tube', 'socket-5a', 'socket-15a'];
+    loadComponents.forEach(loadId => {
+      if (selectedComponentIds.includes(loadId)) {
+        layoutPositions[loadId] = { x: xLoad + loadCount * 100, y: loadY };
+        loadCount++;
+      }
+    });
+    
+    // Position backup components at bottom
+    if (hasBattery) {
+      layoutPositions['battery'] = { x: 80, y: 400 };
+    }
+    if (hasInverter) {
+      layoutPositions['inverter'] = { x: 200, y: 400 };
+    }
+  }
+
+  // Create nodes with positions
+  selectedComponents.forEach((component) => {
+    if (!component) return;
+    
+    const pos = layoutPositions[component.id] || { x: 100, y: 100 };
+    
+    nodes.push({
+      id: component.id,
+      type: 'electrical',
+      position: pos,
+      data: {
+        componentId: component.id,
+        label: component.name,
+      },
+    });
   });
 
-  // 4. Generate Edges
-  const correctConnections = getCorrectConnections(nodes, 'series'); // Default to Series for Auto-Layout
-
+  // Generate proper closed circuit connections
+  const correctConnections = getCorrectConnections(selectedComponentIds);
+  
   correctConnections.forEach((conn, index) => {
     const wireColor = conn.wireType === 'live' ? WIRE_COLORS.live :
-      conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
-        conn.wireType === 'earth' ? WIRE_COLORS.earth :
-          WIRE_COLORS.dc;
-
+                      conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
+                      conn.wireType === 'earth' ? WIRE_COLORS.earth :
+                      WIRE_COLORS.dc;
+    
     edges.push({
       id: `${conn.source}-${conn.target}-${conn.wireType}-${index}`,
       source: conn.source,
       target: conn.target,
       sourceHandle: conn.sourceHandle,
       targetHandle: conn.targetHandle,
-      type: 'deletable',
-      style: {
-        stroke: wireColor,
+      type: 'smoothstep',
+      style: { 
+        stroke: wireColor, 
         strokeWidth: conn.wireType === 'live' ? 4 : 3,
       },
       animated: conn.wireType === 'live',
-      label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') :
-        conn.wireType === 'live' ? 'L' :
-          conn.wireType === 'neutral' ? 'N' :
-            conn.wireType === 'earth' ? 'E' : undefined,
-      labelStyle: {
-        fill: wireColor,
+      label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') : 
+             conn.wireType === 'live' ? 'L' :
+             conn.wireType === 'neutral' ? 'N' :
+             conn.wireType === 'earth' ? 'E' : undefined,
+      labelStyle: { 
+        fill: wireColor, 
         fontWeight: 700,
         fontSize: 12,
       },
@@ -590,28 +585,89 @@ export function generateWiringExplanation(selectedComponentIds: string[]): strin
   const hasSupply = selectedComponentIds.includes('power-supply');
   const hasMCB = selectedComponentIds.includes('mcb');
   const hasDB = selectedComponentIds.includes('distribution-board');
+  const hasSwitch = selectedComponentIds.includes('switch');
+  const hasRegulator = selectedComponentIds.includes('regulator');
+  const hasFan = selectedComponentIds.includes('fan');
+  const hasInverter = selectedComponentIds.includes('inverter');
+  const hasBattery = selectedComponentIds.includes('battery');
 
-  explanations.push("🔌 CIRCUIT EXPLANATION:");
-  explanations.push("   This diagram represents a standard residential electrical circuit.");
+  explanations.push("🔌 PRACTICAL ELECTRICAL CIRCUIT:");
+  explanations.push("   A complete circuit requires current to flow from source → through protection → through load → back to source.");
+  explanations.push("   This is the basic principle of real household electrical systems.");
   explanations.push("");
 
   if (hasSupply) {
-    explanations.push("1. POWER SOURCE:");
-    explanations.push("   - 230V AC Supply enters the system.");
-    explanations.push("   - Red wire is Live (Phase), Blue is Neutral, Green is Earth.");
+    explanations.push("⚡ AC POWER SUPPLY (Main Source):");
+    explanations.push("   The 230V AC supply is the main power source from the utility.");
+    explanations.push("   Live (L) carries current, Neutral (N) returns it, Earth (E) provides safety grounding.");
+    explanations.push("");
   }
 
   if (hasMCB) {
-    explanations.push("2. PROTECTION:");
-    explanations.push("   - The MCB (Miniature Circuit Breaker) is the first line of defense.");
-    explanations.push("   - It cuts off power automatically if there's an overload or short circuit.");
+    explanations.push("🔌 MCB (Miniature Circuit Breaker):");
+    explanations.push("   Protects the circuit from overcurrent and short circuits.");
+    explanations.push("   Automatically trips (opens) if current exceeds safe limits.");
+    explanations.push("");
   }
 
   if (hasDB) {
-    explanations.push("3. DISTRIBUTION:");
-    explanations.push("   - The Distribution Board splits power to different circuits.");
-    explanations.push("   - It ensures organized and safe power delivery to all rooms/devices.");
+    explanations.push("📦 DISTRIBUTION BOARD:");
+    explanations.push("   Central hub that distributes power to multiple circuits.");
+    explanations.push("   Contains separate buses for Live, Neutral, and Earth connections.");
+    explanations.push("");
   }
+
+  if (hasFan && hasSwitch && hasRegulator) {
+    explanations.push("🌀 CEILING FAN CIRCUIT FLOW:");
+    explanations.push("   ┌─────────────────────────────────────────┐");
+    explanations.push("   │          AC Supply (230V)                │");
+    explanations.push("   │        (L)      (N)      (E)             │");
+    explanations.push("   │        │        │        │               │");
+    explanations.push("   │      [MCB]    [MCB]     [DB]             │");
+    explanations.push("   │        │        │        │               │");
+    explanations.push("   │      [DB]     [DB]     [DB]              │");
+    explanations.push("   │        │        │        │               │");
+    explanations.push("   │    [SWITCH]    └────────[FAN-N]         │");
+    explanations.push("   │        │                 │ (Neutral)    │");
+    explanations.push("   │   [REGULATOR]            │              │");
+    explanations.push("   │        │                 │              │");
+    explanations.push("   │        └────[FAN-L]──────┘              │");
+    explanations.push("   │             (Live)                      │");
+    explanations.push("   └─────────────────────────────────────────┘");
+    explanations.push("");
+    explanations.push("   → POWER PATH: AC Supply(L) → MCB → DB → Switch → Regulator → Fan(L)");
+    explanations.push("   ← RETURN PATH: Fan(N) → DB Neutral → MCB Neutral → AC Supply(N)");
+    explanations.push("   ⏚ SAFETY: AC Supply(E) → DB Earth → Fan Earth");
+  }
+
+  if (selectedComponentIds.includes('light-bulb') || selectedComponentIds.includes('light-tube')) {
+    explanations.push("");
+    explanations.push("💡 LIGHT CIRCUIT:");
+    explanations.push("   → LIVE: Supply → MCB → DB → Switch → Light(L)");
+    explanations.push("   ← NEUTRAL: Light(N) → DB Neutral → MCB Neutral → Supply(N)");
+  }
+
+  if (selectedComponentIds.includes('socket-5a') || selectedComponentIds.includes('socket-15a')) {
+    explanations.push("");
+    explanations.push("🔌 SOCKET CIRCUIT:");
+    explanations.push("   → LIVE: DB(L) → Socket(L)");
+    explanations.push("   ← NEUTRAL: Socket(N) → DB(N)");
+    explanations.push("   ⏚ EARTH: Socket(E) → DB(E) [Safety]");
+  }
+
+  if (hasInverter && hasBattery) {
+    explanations.push("");
+    explanations.push("🔋 INVERTER DC CIRCUIT:");
+    explanations.push("   → DC+: Battery(+) → Inverter(DC+)");
+    explanations.push("   ← DC-: Inverter(DC-) → Battery(-)");
+  }
+
+  explanations.push("");
+  explanations.push("⚡ Wire Color Code:");
+  explanations.push("   🔴 Red = Live (L) - Carries current FROM source");
+  explanations.push("   🔵 Blue = Neutral (N) - Returns current TO source");
+  explanations.push("   🟢 Green = Earth (E) - Safety grounding");
+  explanations.push("   🟡 Yellow = DC positive/connections");
 
   return explanations;
 }
