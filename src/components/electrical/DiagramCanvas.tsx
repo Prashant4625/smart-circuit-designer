@@ -29,6 +29,7 @@ interface DiagramCanvasProps {
   reactFlowRef: React.MutableRefObject<ReactFlowInstance | null>;
   onDropComponent?: (componentId: string, position: { x: number; y: number }) => void;
   onRemoveComponent?: (nodeId: string) => void;
+  onDuplicateComponent?: (nodeId: string) => void;
   isManualMode?: boolean;
 }
 
@@ -46,6 +47,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   reactFlowRef,
   onDropComponent,
   onRemoveComponent,
+  onDuplicateComponent,
   isManualMode,
 }) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -57,9 +59,10 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
       data: {
         ...node.data,
         onRemove: onRemoveComponent,
+        onDuplicate: onDuplicateComponent,
       },
     })),
-    [nodes, onRemoveComponent]
+    [nodes, onRemoveComponent, onDuplicateComponent]
   );
 
   const [isDragOver, setIsDragOver] = useState(false);

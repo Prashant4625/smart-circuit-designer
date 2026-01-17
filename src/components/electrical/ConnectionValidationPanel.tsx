@@ -1,19 +1,16 @@
 import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, Sparkles, AlertOctagon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, AlertOctagon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConnectionValidationResult, CorrectConnection } from '@/utils/wiringLogic';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
 
 interface ConnectionValidationPanelProps {
   validationResult: ConnectionValidationResult | null;
-  onShowCorrectConnections: () => void;
   isManualMode: boolean;
 }
 
 export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps> = ({
   validationResult,
-  onShowCorrectConnections,
   isManualMode,
 }) => {
   if (!validationResult || !isManualMode) return null;
@@ -89,8 +86,8 @@ export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps>
         <div className="p-3 space-y-4">
           {/* Circuit Closure Status */}
           <div className={`p-3 rounded-lg border ${validationResult.circuitStatus.isClosed
-              ? 'bg-emerald-500/10 border-emerald-500/30'
-              : 'bg-destructive/10 border-destructive/30'
+            ? 'bg-emerald-500/10 border-emerald-500/30'
+            : 'bg-destructive/10 border-destructive/30'
             }`}>
             <h4 className={`text-xs font-bold flex items-center gap-2 ${validationResult.circuitStatus.isClosed ? 'text-emerald-600' : 'text-destructive'
               }`}>
@@ -181,21 +178,6 @@ export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps>
           )}
         </div>
       </ScrollArea>
-
-      {/* Footer Actions */}
-      {!isValid && (
-        <div className="p-3 border-t bg-muted/20">
-          <Button
-            onClick={onShowCorrectConnections}
-            variant="outline"
-            className="w-full gap-2"
-            size="sm"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            Show Correct Circuit
-          </Button>
-        </div>
-      )}
 
       {/* Success Message */}
       {isValid && (

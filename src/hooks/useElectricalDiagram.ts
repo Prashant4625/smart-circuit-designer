@@ -152,10 +152,14 @@ export function useElectricalDiagram() {
   }, []);
 
   const addComponentAtPosition = useCallback((componentId: string, position: { x: number; y: number }) => {
-    // Check if component already exists
-    const existingNode = nodes.find(n => n.data.componentId === componentId);
-    if (existingNode) {
-      return; // Component already exists
+    // Check if component already exists (for singletons)
+    const singletons = ['power-supply', 'mcb', 'distribution-board', 'battery', 'inverter'];
+    if (singletons.includes(componentId)) {
+      const existingNode = nodes.find(n => n.data.componentId === componentId);
+      if (existingNode) {
+        toast.warning(`${componentId.replace('-', ' ')} is already added. Only one instance allowed.`);
+        return;
+      }
     }
 
     const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
@@ -186,6 +190,49 @@ export function useElectricalDiagram() {
     setIsManualMode(true); // Enable manual mode when dragging components
   }, [nodes]);
 
+  const duplicateComponent = useCallback((nodeId: string) => {
+    const sourceNode = nodes.find(n => n.id === nodeId);
+    if (!sourceNode) return;
+
+    const componentId = sourceNode.data.componentId;
+
+    // Check for singletons (prevent duplication)
+    const singletons = ['power-supply', 'mcb', 'distribution-board', 'battery', 'inverter'];
+    if (singletons.includes(componentId)) {
+      toast.warning(`${componentId.replace('-', ' ')} cannot be duplicated. Only one instance allowed.`);
+      return;
+    }
+
+    const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
+    if (!component) return;
+
+    // Create new node with offset position
+    const newNode: Node = {
+      id: `${componentId}-${Date.now()}`,
+      type: 'electrical',
+      position: {
+        x: sourceNode.position.x + 50,
+        y: sourceNode.position.y + 50
+      },
+      data: {
+        componentId: component.id,
+        label: component.name,
+      },
+    };
+
+    setNodes(prev => [...prev, newNode]);
+
+    // Select the new node
+    setSelectedComponents(prev => {
+      if (!prev.includes(componentId)) {
+        return [...prev, componentId];
+      }
+      return prev;
+    });
+
+    toast.success(`Duplicated ${component.name}`);
+  }, [nodes]);
+
   const generateDiagram = useCallback(() => {
     if (hasErrors) return;
 
@@ -213,12 +260,14 @@ export function useElectricalDiagram() {
   const autoArrange = useCallback(() => {
     if (nodes.length === 0) return;
 
-    const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents);
+    // Pass existing nodes to preserve duplicates and data
+    const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents, nodes);
     setNodes(arrangedNodes);
     setEdges(arrangedEdges);
     setIsManualMode(false);
     setConnectionValidation(null);
-  }, [selectedComponents, nodes.length]);
+    toast.success('Diagram arranged and wired!');
+  }, [selectedComponents, nodes]);
 
   const resetDiagram = useCallback(() => {
     setSelectedComponents([]);
@@ -242,13 +291,11 @@ export function useElectricalDiagram() {
   }, [selectedComponents, nodes, edges]);
 
   // Auto-connect wires for existing components
-  const autoConnectWires = useCallback(() => {
+  const autoConnectWires = useCallback((wiringMode: 'series' | 'parallel' | 'all' = 'all') => {
     if (nodes.length === 0) return;
 
-    // Use the nodes currently on canvas to determine connections
-    const correctConnections = getCorrectConnections(nodes);
-
-    // Convert CorrectConnection[] to Edge[]
+    // Generate edges based on correct connections
+    const correctConnections = getCorrectConnections(nodes, wiringMode);
     const newEdges: Edge[] = correctConnections.map((conn, index) => {
       const wireColor = conn.wireType === 'live' ? WIRE_COLORS.live :
         conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
@@ -256,12 +303,12 @@ export function useElectricalDiagram() {
             WIRE_COLORS.dc;
 
       return {
-        id: `${conn.source}-${conn.target}-${conn.wireType}-${index}`,
+        id: `auto-${conn.source}-${conn.target}-${index}`,
         source: conn.source,
         target: conn.target,
         sourceHandle: conn.sourceHandle,
         targetHandle: conn.targetHandle,
-        type: 'smoothstep',
+        type: 'deletable',
         style: {
           stroke: wireColor,
           strokeWidth: conn.wireType === 'live' ? 4 : 3,
@@ -284,34 +331,55 @@ export function useElectricalDiagram() {
     });
 
     setEdges(newEdges);
-    setIsManualMode(false);
     setConnectionValidation(null);
+    toast.success('Auto-connected wires!');
   }, [nodes]);
 
-  // Validate user connections
+  // Validate user connections (Enforcing Series Mode)
   const validateConnections = useCallback(() => {
     if (nodes.length === 0) return;
 
-    const result = validateUserConnections(edges, nodes);
+    // Enforce Series Mode for validation as per user request
+    const result = validateUserConnections(edges, nodes, 'series');
     setConnectionValidation(result);
+
+    // Visually mark edges based on validation result
+    const newEdges = edges.map(edge => {
+      const isIncorrect = result.incorrectEdges.some(ie => ie.edge.id === edge.id);
+      const isCorrect = result.correctEdges.some(ce => ce.id === edge.id);
+
+      if (isIncorrect) {
+        return {
+          ...edge,
+          animated: true,
+          style: { ...edge.style, stroke: '#ef4444', strokeWidth: 3, strokeDasharray: '5,5' }, // Red dashed
+          label: '❌',
+          labelStyle: { fill: '#ef4444', fontWeight: 700, fontSize: 16 },
+          labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+        };
+      } else if (isCorrect) {
+        return {
+          ...edge,
+          animated: false,
+          // Keep original color (don't override stroke)
+          style: { ...edge.style, strokeWidth: 3 },
+          label: '✓',
+          labelStyle: { fill: '#22c55e', fontWeight: 700, fontSize: 16 }, // Green Tick
+          labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
+        };
+      }
+      return edge;
+    });
+
+    setEdges(newEdges);
 
     if (result.isValid) {
       toast.success('🎉 Perfect! All connections are correct!');
     } else {
-      toast.info(`Score: ${result.score}/${result.totalExpected} - Check the validation panel for details`);
+      toast.error(`Incorrect Connections! Score: ${result.score}/${result.totalExpected}`);
+      toast.info('Check the panel for hints on how to fix the errors.');
     }
   }, [edges, nodes]);
-
-  // Show correct connections
-  const showCorrectConnections = useCallback(() => {
-    if (nodes.length === 0) return;
-
-    const { edges: correctEdges } = generateWiringDiagram(selectedComponents);
-    setEdges(correctEdges);
-    setIsManualMode(false);
-    setConnectionValidation(null);
-    toast.success('Showing correct circuit connections');
-  }, [selectedComponents, nodes.length]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -379,7 +447,6 @@ export function useElectricalDiagram() {
     resetDiagram,
     generateShareableLink,
     validateConnections,
-    showCorrectConnections,
     setNodes,
     setEdges: setEdgesWithHistory,
     onNodesChange,
@@ -388,5 +455,6 @@ export function useElectricalDiagram() {
     canGenerate,
     undo,
     canUndo,
+    duplicateComponent,
   };
 }

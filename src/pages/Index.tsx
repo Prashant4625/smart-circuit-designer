@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback, DragEvent } from 'react';
+import { useRef, useState, useCallback, DragEvent, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ReactFlowInstance } from 'reactflow';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
@@ -9,8 +10,10 @@ import { ComponentSelectionPanel } from '@/components/electrical/ComponentSelect
 import { DiagramCanvas } from '@/components/electrical/DiagramCanvas';
 import { Toolbar } from '@/components/electrical/Toolbar';
 import { ConnectionValidationPanel } from '@/components/electrical/ConnectionValidationPanel';
+import { ValidationResultsDialog } from '@/components/electrical/ValidationResultsDialog';
 import { generateWiringExplanation } from '@/utils/wiringLogic';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ElectricalComponent } from '@/types/electrical';
 
@@ -33,7 +36,6 @@ const Index = () => {
     resetDiagram,
     generateShareableLink,
     validateConnections,
-    showCorrectConnections,
     setNodes,
     setEdges,
     hasErrors,
@@ -42,11 +44,21 @@ const Index = () => {
     onEdgesChange,
     undo,
     canUndo,
+    duplicateComponent,
   } = useElectricalDiagram();
 
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showValidationDialog, setShowValidationDialog] = useState(false);
+  const [projectName, setProjectName] = useState(location.state?.projectName || 'Untitled Circuit');
+
+  useEffect(() => {
+    if (location.state?.projectName) {
+      setProjectName(location.state.projectName);
+    }
+  }, [location.state]);
 
   const handleDragStart = useCallback((event: DragEvent, component: ElectricalComponent) => {
     event.dataTransfer.setData('application/electrical-component', component.id);
@@ -65,7 +77,7 @@ const Index = () => {
       if (!reactFlowViewport) { toast.error('No diagram to export'); return; }
       const dataUrl = await toPng(reactFlowViewport as HTMLElement, { backgroundColor: '#ffffff', quality: 1, pixelRatio: 2 });
       const link = document.createElement('a');
-      link.download = 'electrical-diagram.png';
+      link.download = `${projectName.replace(/\s+/g, '-').toLowerCase()}.png`;
       link.href = dataUrl;
       link.click();
       toast.success('Diagram exported as PNG');
@@ -85,7 +97,7 @@ const Index = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.setFontSize(18);
-      pdf.text('Electrical Wiring Diagram', pageWidth / 2, 15, { align: 'center' });
+      pdf.text(projectName, pageWidth / 2, 15, { align: 'center' });
       const imgWidth = pageWidth - 40;
       const imgHeight = (pageHeight - 60) * 0.7;
       pdf.addImage(dataUrl, 'PNG', 20, 25, imgWidth, imgHeight);
@@ -97,13 +109,13 @@ const Index = () => {
         pdf.text(line, 20, yPos);
         yPos += 6;
       });
-      pdf.save('electrical-diagram.pdf');
+      pdf.save(`${projectName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success('Diagram exported as PDF');
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export diagram');
     }
-  }, [selectedComponents]);
+  }, [selectedComponents, projectName]);
 
   const handleShare = useCallback(async () => {
     if (nodes.length === 0) { toast.error('Create a diagram first before sharing'); return; }
@@ -122,26 +134,50 @@ const Index = () => {
     }
   }, [generateShareableLink, nodes.length]);
 
+  const handleAutoWire = useCallback(() => {
+    if (nodes.length === 0) {
+      generateDiagram();
+      return;
+    }
+    autoArrange();
+  }, [nodes, generateDiagram, autoArrange]);
+
+  const handleValidate = useCallback(() => {
+    validateConnections();
+    setShowValidationDialog(true);
+  }, [validateConnections]);
+
   const explanations = generateWiringExplanation(selectedComponents);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <header className="flex-shrink-0 border-b border-border bg-card">
-        <div className="px-4 py-3">
-          <h1 className="text-xl font-bold text-foreground">⚡ Smart Electrical Wiring Diagram Generator</h1>
-          <p className="text-sm text-muted-foreground">Design professional electrical wiring diagrams with automatic connection logic</p>
+        <div className="px-4 py-3 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">⚡ Smart Electrical Wiring Diagram Generator</h1>
+            <p className="text-sm text-muted-foreground">Design professional electrical wiring diagrams with automatic connection logic</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Project:</span>
+            <Input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              className="w-64 h-8"
+              placeholder="Project Name"
+            />
+          </div>
         </div>
       </header>
 
       <Toolbar
-        onGenerate={generateDiagram}
+        onGenerate={handleAutoWire}
         onGenerateNodesOnly={generateNodesOnly}
         onReset={resetDiagram}
         onExportPNG={handleExportPNG}
         onExportPDF={handleExportPDF}
         onShare={handleShare}
         onAutoArrange={autoArrange}
-        onValidate={validateConnections}
+        onValidate={handleValidate}
         onUndo={undo}
         canGenerate={canGenerate}
         hasErrors={hasErrors}
@@ -180,13 +216,14 @@ const Index = () => {
                   reactFlowRef={reactFlowRef}
                   onDropComponent={handleDropComponent}
                   onRemoveComponent={removeComponent}
+                  onDuplicateComponent={duplicateComponent}
                   isManualMode={isManualMode}
                 />
                 {edges.length === 0 && !isManualMode && (
                   <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
-                    <Button onClick={autoConnectWires} className="gap-2 shadow-lg animate-pulse" size="lg">
+                    <Button onClick={handleAutoWire} className="gap-2 shadow-lg animate-pulse" size="lg">
                       <Wand2 className="w-4 h-4" />
-                      Auto-Connect Wires
+                      Auto-Connect Wires (Series)
                     </Button>
                   </div>
                 )}
@@ -199,11 +236,16 @@ const Index = () => {
             <div className="absolute bottom-4 right-4 z-20 w-80">
               <ConnectionValidationPanel
                 validationResult={connectionValidation}
-                onShowCorrectConnections={showCorrectConnections}
                 isManualMode={isManualMode}
               />
             </div>
           )}
+
+          <ValidationResultsDialog
+            isOpen={showValidationDialog}
+            onClose={() => setShowValidationDialog(false)}
+            validationResult={connectionValidation}
+          />
 
           {selectedComponents.length > 0 && (
             <div className="flex-shrink-0 border-t border-border bg-card">

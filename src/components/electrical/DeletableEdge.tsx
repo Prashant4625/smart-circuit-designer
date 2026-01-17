@@ -6,7 +6,7 @@ import {
     getSmoothStepPath,
     useReactFlow,
 } from 'reactflow';
-import { X } from 'lucide-react';
+import { Trash } from 'lucide-react';
 
 export const DeletableEdge: React.FC<EdgeProps> = ({
     id,
@@ -50,11 +50,11 @@ export const DeletableEdge: React.FC<EdgeProps> = ({
                         className="nodrag nopan"
                     >
                         <button
-                            className="w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors shadow-sm border border-white/20"
+                            className="w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors shadow-sm border border-white/20"
                             onClick={onEdgeClick}
                             title="Remove Connection"
                         >
-                            <X className="w-3 h-3" />
+                            <Trash className="w-3 h-3" />
                         </button>
                     </div>
                 </EdgeLabelRenderer>

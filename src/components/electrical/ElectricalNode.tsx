@@ -3,13 +3,14 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ComponentIcon } from './ComponentIcon';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ElectricalNodeData {
   componentId: string;
   label: string;
   onRemove?: (nodeId: string) => void;
+  onDuplicate?: (nodeId: string) => void;
 }
 
 export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, selected }) => {
@@ -17,7 +18,7 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
   if (!component) return null;
 
-  // Get terminals by position
+  // ... (existing terminal logic) ...
   const topTerminals = component.terminals.filter(t => t.position === 'top');
   const bottomTerminals = component.terminals.filter(t => t.position === 'bottom');
   const leftTerminals = component.terminals.filter(t => t.position === 'left');
@@ -29,10 +30,10 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
     total: number,
     position: Position
   ) => {
+    // ... (existing renderHandle logic) ...
     const isHorizontal = position === Position.Top || position === Position.Bottom;
     const offset = ((index + 1) / (total + 1)) * 100;
 
-    // Create both source and target handles for the same terminal to allow bidirectional connections
     return (
       <TooltipProvider key={terminal.id} delayDuration={100}>
         <Tooltip>
@@ -73,6 +74,13 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
     }
   };
 
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (data.onDuplicate) {
+      data.onDuplicate(id);
+    }
+  };
+
   return (
     <div
       className={`
@@ -88,9 +96,23 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         size="icon"
         className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md"
         onClick={handleRemove}
+        title="Remove Component"
       >
         <X className="w-3 h-3" />
       </Button>
+
+      {/* Duplicate Button - Only visible when selected */}
+      {selected && data.onDuplicate && (
+        <Button
+          variant="default"
+          size="icon"
+          className="absolute -top-2 -left-2 w-6 h-6 rounded-full z-10 shadow-md bg-green-600 hover:bg-green-700 text-white"
+          onClick={handleDuplicate}
+          title="Duplicate Component"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+      )}
 
       {/* Top Terminals */}
       {topTerminals.map((terminal, index) =>
@@ -122,7 +144,8 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
       {/* Selection Indicator */}
       {selected && (
-        <div className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center">
+        <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center pointer-events-none">
+          {/* Centered selection dot instead of top-left to avoid overlap with duplicate button */}
           <div className="w-2 h-2 bg-white rounded-full" />
         </div>
       )}
