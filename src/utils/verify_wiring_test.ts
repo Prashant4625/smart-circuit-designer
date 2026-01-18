@@ -1,6 +1,5 @@
-
-import { generateWiringDiagram, validateUserConnections, validateCircuitClosure } from './wiringLogic';
-import { Node, Edge } from 'reactflow';
+import { generateWiringDiagram, validateUserConnections } from './wiringLogic';
+import { Edge } from 'reactflow';
 
 async function runTests() {
     console.log("🧪 Starting Verification Tests...");
@@ -36,7 +35,6 @@ async function runTests() {
 
     // Test 3: Validation - Open Circuit (Broken Neutral)
     console.log("\nTest 3: Validation (Open Circuit - Broken Neutral)");
-    // Remove the Neutral return from Fan to DB
     const brokenEdges = diagram.edges.filter(e =>
         !(e.source === 'fan' && e.target === 'distribution-board' && e.sourceHandle === 'fan-n')
     );
@@ -59,7 +57,6 @@ async function runTests() {
             sourceHandle: 'supply-l',
             target: 'power-supply',
             targetHandle: 'supply-n',
-            data: {}
         }
     ];
 

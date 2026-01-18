@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, AlertOctagon } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, AlertOctagon, Zap } from 'lucide-react';
 import { ConnectionValidationResult, CorrectConnection } from '@/utils/wiringLogic';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
 
@@ -26,7 +26,7 @@ export const ValidationResultsDialog: React.FC<ValidationResultsDialogProps> = (
 }) => {
     if (!validationResult) return null;
 
-    const { isValid, incorrectEdges, missingConnections, score, totalExpected, correctEdges } = validationResult;
+    const { isValid, incorrectEdges, missingConnections, score, totalExpected, correctEdges, circuitStatus } = validationResult;
 
     const getWireColorStyle = (wireType: 'live' | 'neutral' | 'earth' | 'dc') => {
         const colors = {
@@ -83,20 +83,20 @@ export const ValidationResultsDialog: React.FC<ValidationResultsDialogProps> = (
                     <div className="space-y-6 py-4">
 
                         {/* Circuit Status */}
-                        <div className={`p-4 rounded-lg border-l-4 ${validationResult.circuitStatus.isClosed
+                        <div className={`p-4 rounded-lg border-l-4 ${circuitStatus.isClosed
                                 ? 'bg-emerald-50 border-emerald-500'
                                 : 'bg-red-50 border-red-500'
                             }`}>
                             <h4 className="font-bold flex items-center gap-2 mb-1">
-                                {validationResult.circuitStatus.isClosed ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                {circuitStatus.isClosed ? (
+                                    <Zap className="w-5 h-5 text-emerald-600" />
                                 ) : (
                                     <AlertOctagon className="w-5 h-5 text-red-600" />
                                 )}
-                                {validationResult.circuitStatus.isClosed ? 'Circuit Closed' : 'Open Circuit'}
+                                {circuitStatus.isClosed ? 'Circuit Closed - Devices Working!' : 'Open Circuit'}
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                                {validationResult.circuitStatus.message}
+                                {circuitStatus.message}
                             </p>
                         </div>
 

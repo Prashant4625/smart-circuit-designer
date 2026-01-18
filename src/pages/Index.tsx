@@ -11,7 +11,7 @@ import { DiagramCanvas } from '@/components/electrical/DiagramCanvas';
 import { Toolbar } from '@/components/electrical/Toolbar';
 import { ConnectionValidationPanel } from '@/components/electrical/ConnectionValidationPanel';
 import { ValidationResultsDialog } from '@/components/electrical/ValidationResultsDialog';
-import { generateWiringExplanation } from '@/utils/wiringLogic';
+// Wiring explanation removed - using validation panel instead
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';

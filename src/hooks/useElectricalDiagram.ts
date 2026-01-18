@@ -6,14 +6,11 @@ import {
   applyEdgeChanges,
   OnNodesChange,
   OnEdgesChange,
-  NodeChange,
-  EdgeChange
 } from 'reactflow';
-import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
+import { ELECTRICAL_COMPONENTS, WIRE_COLORS } from '@/constants/electricalComponents';
 import { ValidationError } from '@/types/electrical';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import { generateWiringDiagram, validateUserConnections, ConnectionValidationResult, getCorrectConnections } from '@/utils/wiringLogic';
-import { WIRE_COLORS } from '@/constants/electricalComponents';
 import { toast } from 'sonner';
 
 interface DiagramState {
@@ -108,20 +105,19 @@ export function useElectricalDiagram() {
 
     toast.info(`Removed ${componentId.replace('-', ' ')}. Diagram cleared for manual editing.`);
   }, [nodes]);
+
   const toggleComponent = useCallback((componentId: string) => {
     setSelectedComponents(prev => {
       const isSelected = prev.includes(componentId);
 
       if (isSelected) {
-        // Remove component
         setNodes(currentNodes => currentNodes.filter(n => n.data.componentId !== componentId));
-        setEdges([]); // Clear edges on removal
+        setEdges([]);
         setIsManualMode(true);
         setConnectionValidation(null);
         toast.info(`Removed ${componentId.replace('-', ' ')}`);
         return prev.filter(id => id !== componentId);
       } else {
-        // Add component
         const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
         if (component) {
           const newNode: Node = {
@@ -152,7 +148,6 @@ export function useElectricalDiagram() {
   }, []);
 
   const addComponentAtPosition = useCallback((componentId: string, position: { x: number; y: number }) => {
-    // Check if component already exists (for singletons)
     const singletons = ['power-supply', 'mcb', 'distribution-board', 'battery', 'inverter'];
     if (singletons.includes(componentId)) {
       const existingNode = nodes.find(n => n.data.componentId === componentId);
@@ -165,7 +160,6 @@ export function useElectricalDiagram() {
     const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
     if (!component) return;
 
-    // Create new node with remove handler
     const newNode: Node = {
       id: `${componentId}-${Date.now()}`,
       type: 'electrical',
@@ -178,7 +172,6 @@ export function useElectricalDiagram() {
 
     setNodes(prev => [...prev, newNode]);
 
-    // Add to selected components if not already
     setSelectedComponents(prev => {
       if (!prev.includes(componentId)) {
         return [...prev, componentId];
@@ -187,7 +180,7 @@ export function useElectricalDiagram() {
     });
 
     setDiagramGenerated(true);
-    setIsManualMode(true); // Enable manual mode when dragging components
+    setIsManualMode(true);
   }, [nodes]);
 
   const duplicateComponent = useCallback((nodeId: string) => {
@@ -196,7 +189,6 @@ export function useElectricalDiagram() {
 
     const componentId = sourceNode.data.componentId;
 
-    // Check for singletons (prevent duplication)
     const singletons = ['power-supply', 'mcb', 'distribution-board', 'battery', 'inverter'];
     if (singletons.includes(componentId)) {
       toast.warning(`${componentId.replace('-', ' ')} cannot be duplicated. Only one instance allowed.`);
@@ -206,7 +198,6 @@ export function useElectricalDiagram() {
     const component = ELECTRICAL_COMPONENTS.find(c => c.id === componentId);
     if (!component) return;
 
-    // Create new node with offset position
     const newNode: Node = {
       id: `${componentId}-${Date.now()}`,
       type: 'electrical',
@@ -222,7 +213,6 @@ export function useElectricalDiagram() {
 
     setNodes(prev => [...prev, newNode]);
 
-    // Select the new node
     setSelectedComponents(prev => {
       if (!prev.includes(componentId)) {
         return [...prev, componentId];
@@ -244,13 +234,12 @@ export function useElectricalDiagram() {
     setConnectionValidation(null);
   }, [selectedComponents, hasErrors]);
 
-  // Generate nodes only (for manual wiring practice)
   const generateNodesOnly = useCallback(() => {
     if (hasErrors) return;
 
     const { nodes: newNodes } = generateWiringDiagram(selectedComponents);
     setNodes(newNodes);
-    setEdges([]); // No edges - user will connect manually
+    setEdges([]);
     setDiagramGenerated(true);
     setIsManualMode(true);
     setConnectionValidation(null);
@@ -260,8 +249,7 @@ export function useElectricalDiagram() {
   const autoArrange = useCallback(() => {
     if (nodes.length === 0) return;
 
-    // Pass existing nodes to preserve duplicates and data
-    const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents, nodes);
+    const { nodes: arrangedNodes, edges: arrangedEdges } = generateWiringDiagram(selectedComponents);
     setNodes(arrangedNodes);
     setEdges(arrangedEdges);
     setIsManualMode(false);
@@ -290,22 +278,28 @@ export function useElectricalDiagram() {
     return url;
   }, [selectedComponents, nodes, edges]);
 
-  // Auto-connect wires for existing components
-  const autoConnectWires = useCallback((wiringMode: 'series' | 'parallel' | 'all' = 'all') => {
+  const autoConnectWires = useCallback(() => {
     if (nodes.length === 0) return;
 
-    // Generate edges based on correct connections
-    const correctConnections = getCorrectConnections(nodes, wiringMode);
+    const selectedComponentIds = nodes.map(n => n.data.componentId);
+    const correctConnections = getCorrectConnections(selectedComponentIds);
+    
     const newEdges: Edge[] = correctConnections.map((conn, index) => {
+      // Find the actual node IDs
+      const sourceNode = nodes.find(n => n.data.componentId === conn.source);
+      const targetNode = nodes.find(n => n.data.componentId === conn.target);
+      
+      if (!sourceNode || !targetNode) return null;
+      
       const wireColor = conn.wireType === 'live' ? WIRE_COLORS.live :
         conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
-          conn.wireType === 'earth' ? WIRE_COLORS.earth :
-            WIRE_COLORS.dc;
+        conn.wireType === 'earth' ? WIRE_COLORS.earth :
+        WIRE_COLORS.dc;
 
       return {
-        id: `auto-${conn.source}-${conn.target}-${index}`,
-        source: conn.source,
-        target: conn.target,
+        id: `auto-${sourceNode.id}-${targetNode.id}-${index}`,
+        source: sourceNode.id,
+        target: targetNode.id,
         sourceHandle: conn.sourceHandle,
         targetHandle: conn.targetHandle,
         type: 'deletable',
@@ -316,8 +310,8 @@ export function useElectricalDiagram() {
         animated: conn.wireType === 'live',
         label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') :
           conn.wireType === 'live' ? 'L' :
-            conn.wireType === 'neutral' ? 'N' :
-              conn.wireType === 'earth' ? 'E' : undefined,
+          conn.wireType === 'neutral' ? 'N' :
+          conn.wireType === 'earth' ? 'E' : undefined,
         labelStyle: {
           fill: wireColor,
           fontWeight: 700,
@@ -328,22 +322,19 @@ export function useElectricalDiagram() {
           fillOpacity: 0.9,
         },
       };
-    });
+    }).filter(Boolean) as Edge[];
 
     setEdges(newEdges);
     setConnectionValidation(null);
     toast.success('Auto-connected wires!');
   }, [nodes]);
 
-  // Validate user connections (Enforcing Series Mode)
   const validateConnections = useCallback(() => {
     if (nodes.length === 0) return;
 
-    // Enforce Series Mode for validation as per user request
-    const result = validateUserConnections(edges, nodes, 'series');
+    const result = validateUserConnections(edges, nodes);
     setConnectionValidation(result);
 
-    // Visually mark edges based on validation result
     const newEdges = edges.map(edge => {
       const isIncorrect = result.incorrectEdges.some(ie => ie.edge.id === edge.id);
       const isCorrect = result.correctEdges.some(ce => ce.id === edge.id);
@@ -352,7 +343,7 @@ export function useElectricalDiagram() {
         return {
           ...edge,
           animated: true,
-          style: { ...edge.style, stroke: '#ef4444', strokeWidth: 3, strokeDasharray: '5,5' }, // Red dashed
+          style: { ...edge.style, stroke: '#ef4444', strokeWidth: 3, strokeDasharray: '5,5' },
           label: '❌',
           labelStyle: { fill: '#ef4444', fontWeight: 700, fontSize: 16 },
           labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
@@ -361,10 +352,9 @@ export function useElectricalDiagram() {
         return {
           ...edge,
           animated: false,
-          // Keep original color (don't override stroke)
           style: { ...edge.style, strokeWidth: 3 },
           label: '✓',
-          labelStyle: { fill: '#22c55e', fontWeight: 700, fontSize: 16 }, // Green Tick
+          labelStyle: { fill: '#22c55e', fontWeight: 700, fontSize: 16 },
           labelBgStyle: { fill: 'white', fillOpacity: 0.9 },
         };
       }
@@ -386,12 +376,7 @@ export function useElectricalDiagram() {
     [setNodes]
   );
 
-  // History for Undo (Nodes + Edges)
   const [history, setHistory] = useState<{ nodes: Node[], edges: Edge[] }[]>([]);
-
-  const saveHistory = useCallback(() => {
-    setHistory(prev => [...prev, { nodes: [...nodes], edges: [...edges] }]);
-  }, [nodes, edges]);
 
   const undo = useCallback(() => {
     setHistory(prev => {
@@ -408,10 +393,8 @@ export function useElectricalDiagram() {
 
   const canUndo = history.length > 0;
 
-  // Wrapper to save history before changing edges (for manual connections)
   const setEdgesWithHistory = useCallback((newEdges: Edge[] | ((prev: Edge[]) => Edge[])) => {
     setEdges(prev => {
-      // Save current state (nodes + edges) before modifying edges
       setHistory(h => [...h, { nodes: [...nodes], edges: [...prev] }]);
 
       if (typeof newEdges === 'function') {
@@ -419,7 +402,7 @@ export function useElectricalDiagram() {
       }
       return newEdges;
     });
-  }, [nodes]); // Depend on nodes to save correct state
+  }, [nodes]);
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {

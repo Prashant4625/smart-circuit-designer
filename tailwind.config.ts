@@ -57,6 +57,26 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        navy: {
+          50: "hsl(210 40% 98%)",
+          100: "hsl(210 40% 94%)",
+          200: "hsl(210 40% 85%)",
+          300: "hsl(210 40% 70%)",
+          400: "hsl(220 50% 50%)",
+          500: "hsl(220 60% 40%)",
+          600: "hsl(220 70% 30%)",
+          700: "hsl(220 70% 25%)",
+          800: "hsl(220 70% 20%)",
+          900: "hsl(222 47% 11%)",
+        },
+        gold: {
+          DEFAULT: "hsl(45 93% 47%)",
+          light: "hsl(45 93% 60%)",
+          dark: "hsl(45 93% 35%)",
+        },
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+        error: "hsl(var(--error))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -65,25 +85,31 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fan-spin": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        "bulb-glow": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 15px hsl(45 100% 60%)) drop-shadow(0 0 30px hsl(45 100% 50%))",
           },
-          to: {
-            height: "0",
+          "50%": {
+            filter: "drop-shadow(0 0 25px hsl(45 100% 70%)) drop-shadow(0 0 50px hsl(45 100% 55%))",
           },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fan-spin": "fan-spin 0.5s linear infinite",
+        "bulb-glow": "bulb-glow 1.5s ease-in-out infinite",
       },
     },
   },
