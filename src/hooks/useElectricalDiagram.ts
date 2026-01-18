@@ -12,7 +12,7 @@ import {
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ValidationError } from '@/types/electrical';
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
-import { generateWiringDiagram, validateUserConnections, ConnectionValidationResult, getCorrectConnections } from '@/utils/wiringLogic';
+import { generateWiringDiagram, validateUserConnections, ConnectionValidationResult, getCorrectConnections, getSmartEdges } from '@/utils/wiringLogic';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
 import { toast } from 'sonner';
 
@@ -29,6 +29,8 @@ export function useElectricalDiagram() {
   const [diagramGenerated, setDiagramGenerated] = useState(false);
   const [isManualMode, setIsManualMode] = useState(false);
   const [connectionValidation, setConnectionValidation] = useState<ConnectionValidationResult | null>(null);
+  const [connectionType, setConnectionType] = useState<'series' | 'parallel' | null>(null);
+  const [showConnectionDialog, setShowConnectionDialog] = useState(false);
 
   // Load state from URL on mount
   useEffect(() => {
@@ -291,64 +293,33 @@ export function useElectricalDiagram() {
   }, [selectedComponents, nodes, edges]);
 
   // Auto-connect wires for existing components
-  const autoConnectWires = useCallback((wiringMode: 'series' | 'parallel' | 'all' = 'all') => {
+  const autoConnectWires = useCallback((projectName?: string) => {
     if (nodes.length === 0) {
       toast.error('No components to wire!');
       return;
     }
 
-    // Generate edges based on correct connections
-    const componentIds = nodes.map(n => n.data.componentId);
-    const correctConnections = getCorrectConnections(componentIds);
-    const newEdges: Edge[] = [];
+    // Check if there are multiple bulbs
+    const bulbs = nodes.filter(n => n.data.componentId === 'light-bulb');
 
-    console.log('Auto-Wire Debug:', { nodes, componentIds, correctConnections });
+    if (bulbs.length >= 2) {
+      // Show dialog to ask user for connection type
+      setShowConnectionDialog(true);
+      return;
+    }
 
-    correctConnections.forEach((conn, index) => {
-      // Find actual nodes for source and target
-      // We find the first matching node for the component type
-      const sourceNode = nodes.find(n => n.data.componentId === conn.source);
-      const targetNode = nodes.find(n => n.data.componentId === conn.target);
+    // If less than 2 bulbs, proceed with standard wiring (parallel by default)
+    const config = {
+      isSeries: false
+    };
 
-      if (sourceNode && targetNode) {
-        const wireColor = conn.wireType === 'live' ? WIRE_COLORS.live :
-          conn.wireType === 'neutral' ? WIRE_COLORS.neutral :
-            conn.wireType === 'earth' ? WIRE_COLORS.earth :
-              WIRE_COLORS.dc;
+    // Generate edges based on smart instance linking
+    const newEdges = getSmartEdges(nodes, config);
 
-        newEdges.push({
-          id: `auto-${sourceNode.id}-${targetNode.id}-${index}`,
-          source: sourceNode.id,
-          target: targetNode.id,
-          sourceHandle: conn.sourceHandle,
-          targetHandle: conn.targetHandle,
-          type: 'smoothstep', // Temporary: Use standard edge to debug visibility
-          style: {
-            stroke: wireColor,
-            strokeWidth: conn.wireType === 'live' ? 4 : 3,
-          },
-          animated: conn.wireType === 'live',
-          label: conn.wireType === 'dc' ? (conn.sourceHandle.includes('pos') ? 'DC+' : 'DC-') :
-            conn.wireType === 'live' ? 'L' :
-              conn.wireType === 'neutral' ? 'N' :
-                conn.wireType === 'earth' ? 'E' : undefined,
-          labelStyle: {
-            fill: wireColor,
-            fontWeight: 700,
-            fontSize: 12,
-          },
-          labelBgStyle: {
-            fill: 'white',
-            fillOpacity: 0.9,
-          },
-        });
-      } else {
-        console.warn('Could not find nodes for connection:', conn);
-      }
-    });
+    console.log('Auto-Wire Smart Edges:', newEdges, 'Config:', config);
 
     if (newEdges.length === 0) {
-      toast.warning(`Found ${correctConnections.length} connections but could not create edges. Check console.`);
+      toast.warning(`Could not create edges. Check console.`);
     } else {
       setEdges(newEdges);
       setConnectionValidation(null);
@@ -356,12 +327,39 @@ export function useElectricalDiagram() {
     }
   }, [nodes]);
 
-  // Validate user connections (Enforcing Series Mode)
+  // Handle connection type selection from dialog
+  const handleConnectionTypeSelect = useCallback((type: 'series' | 'parallel') => {
+    setConnectionType(type);
+    setShowConnectionDialog(false);
+
+    // Now wire with the selected connection type
+    const config = {
+      isSeries: type === 'series'
+    };
+
+    const newEdges = getSmartEdges(nodes, config);
+
+    console.log('Auto-Wire Smart Edges:', newEdges, 'Config:', config);
+
+    if (newEdges.length === 0) {
+      toast.warning(`Could not create edges. Check console.`);
+    } else {
+      setEdges(newEdges);
+      setConnectionValidation(null);
+      toast.success(`Auto-connected ${newEdges.length} wires in ${type} configuration!`);
+    }
+  }, [nodes]);
+
+  // Validate user connections
   const validateConnections = useCallback(() => {
     if (nodes.length === 0) return;
 
-    // Enforce Series Mode for validation as per user request
-    const result = validateUserConnections(edges, nodes);
+    // Use the selected connection type for validation, default to parallel
+    const config = {
+      isSeries: connectionType === 'series'
+    };
+
+    const result = validateUserConnections(edges, nodes, config);
     setConnectionValidation(result);
 
     // Visually mark edges based on validation result
@@ -476,6 +474,8 @@ export function useElectricalDiagram() {
     diagramGenerated,
     isManualMode,
     connectionValidation,
+    connectionType,
+    showConnectionDialog,
     toggleComponent,
     addRequiredComponent,
     addComponentAtPosition,
@@ -487,6 +487,8 @@ export function useElectricalDiagram() {
     resetDiagram,
     generateShareableLink,
     validateConnections,
+    handleConnectionTypeSelect,
+    setShowConnectionDialog,
     setNodes,
     setEdges: setEdgesWithHistory,
     onNodesChange,

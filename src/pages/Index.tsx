@@ -4,17 +4,17 @@ import { ReactFlowInstance } from 'reactflow';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronUp, FileText, Wand2 } from 'lucide-react';
+import { Wand2 } from 'lucide-react';
 import { useElectricalDiagram } from '@/hooks/useElectricalDiagram';
 import { ComponentSelectionPanel } from '@/components/electrical/ComponentSelectionPanel';
 import { DiagramCanvas } from '@/components/electrical/DiagramCanvas';
 import { Toolbar } from '@/components/electrical/Toolbar';
 import { ConnectionValidationPanel } from '@/components/electrical/ConnectionValidationPanel';
 import { ValidationResultsDialog } from '@/components/electrical/ValidationResultsDialog';
+import { ConnectionTypeDialog } from '@/components/electrical/ConnectionTypeDialog';
 // Wiring explanation removed - using validation panel instead
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ElectricalComponent } from '@/types/electrical';
 
 const Index = () => {
@@ -25,6 +25,8 @@ const Index = () => {
     validationErrors,
     isManualMode,
     connectionValidation,
+    connectionType,
+    showConnectionDialog,
     toggleComponent,
     addRequiredComponent,
     addComponentAtPosition,
@@ -36,6 +38,8 @@ const Index = () => {
     resetDiagram,
     generateShareableLink,
     validateConnections,
+    handleConnectionTypeSelect,
+    setShowConnectionDialog,
     setNodes,
     setEdges,
     hasErrors,
@@ -50,7 +54,6 @@ const Index = () => {
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const [showExplanation, setShowExplanation] = useState(false);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [projectName, setProjectName] = useState(location.state?.projectName || 'Untitled Circuit');
 
@@ -85,7 +88,7 @@ const Index = () => {
       console.error('Export failed:', error);
       toast.error('Failed to export diagram');
     }
-  }, []);
+  }, [projectName]);
 
   const handleExportPDF = useCallback(async () => {
     if (!canvasContainerRef.current) return;
@@ -101,21 +104,13 @@ const Index = () => {
       const imgWidth = pageWidth - 40;
       const imgHeight = (pageHeight - 60) * 0.7;
       pdf.addImage(dataUrl, 'PNG', 20, 25, imgWidth, imgHeight);
-      const explanations = generateWiringExplanation(selectedComponents);
-      pdf.setFontSize(10);
-      let yPos = imgHeight + 35;
-      explanations.forEach((line) => {
-        if (yPos > pageHeight - 10) { pdf.addPage(); yPos = 20; }
-        pdf.text(line, 20, yPos);
-        yPos += 6;
-      });
       pdf.save(`${projectName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       toast.success('Diagram exported as PDF');
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Failed to export diagram');
     }
-  }, [selectedComponents, projectName]);
+  }, [projectName]);
 
   const handleShare = useCallback(async () => {
     if (nodes.length === 0) { toast.error('Create a diagram first before sharing'); return; }
@@ -139,31 +134,45 @@ const Index = () => {
       generateDiagram();
       return;
     }
-    autoArrange();
-  }, [nodes, generateDiagram, autoArrange]);
+    autoConnectWires(projectName);
+  }, [nodes, generateDiagram, autoConnectWires, projectName]);
 
   const handleValidate = useCallback(() => {
     validateConnections();
     setShowValidationDialog(true);
   }, [validateConnections]);
 
-  const explanations = generateWiringExplanation(selectedComponents);
-
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <header className="flex-shrink-0 border-b border-border bg-card">
+      {/* Indian Naval Academy Header */}
+      <header className="flex-shrink-0 bg-[#003087] shadow-lg">
         <div className="px-4 py-3 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">⚡ Smart Electrical Wiring Diagram Generator</h1>
-            <p className="text-sm text-muted-foreground">Design professional electrical wiring diagrams with automatic connection logic</p>
+          {/* Left Logo */}
+          <div className="flex-shrink-0">
+            <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-16 w-auto object-contain" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Project:</span>
+
+          {/* Center - Title and Experiment Name */}
+          <div className="flex-1 flex flex-col items-center justify-center mx-4">
+            <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.2em] uppercase">INDIAN NAVAL ACADEMY</h1>
+            <p className="text-white/80 text-sm mt-1">Virtual Electrical Lab</p>
+          </div>
+
+          {/* Right Logo */}
+          <div className="flex-shrink-0">
+            <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-16 w-auto object-contain" />
+          </div>
+        </div>
+
+        {/* Experiment Name Bar */}
+        <div className="px-4 py-2 bg-white/10 backdrop-blur-sm border-t border-white/20">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-sm font-medium text-white">Experiment:</span>
             <Input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="w-64 h-8"
-              placeholder="Project Name"
+              className="w-64 h-8 bg-white/90 text-gray-900"
+              placeholder="Experiment Name"
             />
           </div>
         </div>
@@ -223,7 +232,7 @@ const Index = () => {
                   <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
                     <Button onClick={handleAutoWire} className="gap-2 shadow-lg animate-pulse" size="lg">
                       <Wand2 className="w-4 h-4" />
-                      Auto-Connect Wires (Series)
+                      Auto-Connect Wires
                     </Button>
                   </div>
                 )}
@@ -247,26 +256,12 @@ const Index = () => {
             validationResult={connectionValidation}
           />
 
-          {selectedComponents.length > 0 && (
-            <div className="flex-shrink-0 border-t border-border bg-card">
-              <Button variant="ghost" className="w-full flex items-center justify-between px-4 py-2 h-auto" onClick={() => setShowExplanation(!showExplanation)}>
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  <span className="font-medium">Wiring Explanation</span>
-                </div>
-                {showExplanation ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-              </Button>
-              {showExplanation && (
-                <ScrollArea className="max-h-48 border-t border-border">
-                  <div className="p-4 space-y-2">
-                    {explanations.map((line, index) => (
-                      <p key={index} className={`text-sm ${line.startsWith('⚡') || line.startsWith('   ') ? 'text-muted-foreground' : 'text-foreground'} ${line === '' ? 'h-2' : ''}`}>{line}</p>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </div>
-          )}
+          <ConnectionTypeDialog
+            isOpen={showConnectionDialog}
+            onClose={() => setShowConnectionDialog(false)}
+            onSelectConnectionType={handleConnectionTypeSelect}
+            bulbCount={nodes.filter(n => n.data.componentId === 'light-bulb').length}
+          />
         </div>
       </div>
     </div>

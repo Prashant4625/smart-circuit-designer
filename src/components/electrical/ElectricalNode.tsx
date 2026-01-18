@@ -25,7 +25,7 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
   // Visual styles for active state
   const activeGlowClass = isActive ? 'shadow-[0_0_20px_rgba(250,204,21,0.6)] border-yellow-400 ring-2 ring-yellow-400/50' : '';
-  const activeIconClass = isActive && component.id.includes('fan') ? 'animate-spin duration-[2s]' : '';
+  const activeIconClass = isActive && component.id.includes('fan') ? 'animate-spin' : '';
   const activeTextClass = isActive ? 'text-yellow-500 font-bold' : 'text-foreground';
 
   // Terminal positioning logic
@@ -143,7 +143,10 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
       {/* Component Content */}
       <div className="flex flex-col items-center gap-1.5">
-        <div className={`transition-transform duration-500 ${activeIconClass}`}>
+        <div
+          className={`transition-transform duration-500 ${activeIconClass}`}
+          style={isActive && component.id.includes('fan') ? { animationDuration: '2s' } : undefined}
+        >
           <ComponentIcon type={component.icon} className={`w-14 h-14 ${isActive ? 'drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]' : ''}`} />
         </div>
         <span className={`text-xs font-semibold text-center leading-tight max-w-[100px] transition-colors ${activeTextClass}`}>

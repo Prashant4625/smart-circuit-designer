@@ -39,6 +39,22 @@ const experiments: Experiment[] = [
         difficulty: 'Intermediate',
         image: '/experiments/fan-circuit.png',
         components: ['AC Supply', 'MCB', 'Switch', 'Fan Regulator', 'Ceiling Fan']
+    },
+    {
+        id: 'series-bulbs',
+        title: 'Series Combination of Bulbs',
+        description: 'Connect multiple light bulbs in series and observe the voltage division.',
+        difficulty: 'Intermediate',
+        image: '/experiments/series-circuit.png',
+        components: ['AC Supply', 'MCB', 'Switch', 'Light Bulb', 'Light Bulb']
+    },
+    {
+        id: 'parallel-bulbs',
+        title: 'Parallel Combination of Bulbs',
+        description: 'Connect multiple light bulbs in parallel where each bulb receives full voltage and operates independently.',
+        difficulty: 'Intermediate',
+        image: '/experiments/parallel-circuit.png',
+        components: ['AC Supply', 'MCB', 'Distribution Board', 'Switch', 'Light Bulb', 'Light Bulb', 'Light Bulb']
     }
 ];
 
@@ -52,15 +68,39 @@ const Experiments = () => {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative">
-            {/* Header */}
-            <header className="border-b border-border bg-card/50 backdrop-blur-sm p-4 sticky top-0 z-50">
-                <div className="container mx-auto flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="text-muted-foreground hover:text-foreground hover:bg-card/60">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-                        <Zap className="h-5 w-5 text-primary" /> Standard Experiments
-                    </h1>
+            {/* Indian Naval Academy Header */}
+            <header className="bg-[#003087] shadow-lg sticky top-0 z-50">
+                <div className="px-4 py-3 flex justify-between items-center">
+                    {/* Left Logo */}
+                    <div className="flex-shrink-0">
+                        <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-16 w-auto object-contain" />
+                    </div>
+
+                    {/* Center - Title */}
+                    <div className="flex-1 flex flex-col items-center justify-center mx-4">
+                        <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.2em] uppercase">INDIAN NAVAL ACADEMY</h1>
+                        <p className="text-white/80 text-sm mt-1">Standard Experiments</p>
+                    </div>
+
+                    {/* Right Logo */}
+                    <div className="flex-shrink-0">
+                        <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-16 w-auto object-contain" />
+                    </div>
+                </div>
+
+                {/* Back Button Bar */}
+                <div className="px-4 py-2 bg-white/10 backdrop-blur-sm border-t border-white/20">
+                    <div className="container mx-auto">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate('/')}
+                            className="text-white hover:text-white hover:bg-white/20"
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back to Home
+                        </Button>
+                    </div>
                 </div>
             </header>
 

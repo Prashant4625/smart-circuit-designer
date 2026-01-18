@@ -14,24 +14,22 @@ const Home = () => {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
 
-            {/* Logos */}
-            <div className="absolute top-4 left-4 z-50">
-                <div className="bg-card/70 p-1 rounded-lg shadow-2xl ring-1 ring-border/30">
-                    <img src="/logos/left.jpeg" alt="Left Logo" className="h-24 w-auto object-contain rounded-md" />
-                </div>
-            </div>
-            <div className="absolute top-4 right-4 z-50">
-                <div className="bg-card/70 p-1 rounded-lg shadow-2xl ring-1 ring-border/30">
-                    <img src="/logos/right.jpeg" alt="Right Logo" className="h-24 w-auto object-contain rounded-md" />
-                </div>
-            </div>
+            {/* Indian Naval Academy Header Bar */}
+            <nav className="bg-[#003087] p-3 sticky top-0 z-50 shadow-lg">
+                <div className="container mx-auto flex justify-between items-center">
+                    {/* Left Logo */}
+                    <div className="flex-shrink-0">
+                        <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-20 w-auto object-contain" />
+                    </div>
 
-            {/* Navigation Bar */}
-            <nav className="border-b border-border bg-card/50 backdrop-blur-sm p-4 sticky top-0 z-40 shadow-sm">
-                <div className="container mx-auto flex justify-center items-center">
-                    <div className="flex items-center gap-2">
-                        <Anchor className="h-6 w-6 text-primary" />
-                        <span className="text-xl font-bold tracking-wider text-foreground">INDIAN NAVAL ACADEMY</span>
+                    {/* Center Text */}
+                    <div className="flex-1 flex justify-center items-center">
+                        <span className="text-white text-2xl md:text-3xl font-bold tracking-[0.3em] uppercase">INDIAN NAVAL ACADEMY</span>
+                    </div>
+
+                    {/* Right Logo */}
+                    <div className="flex-shrink-0">
+                        <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-20 w-auto object-contain" />
                     </div>
                 </div>
             </nav>
@@ -59,7 +57,7 @@ const Home = () => {
                             className="w-full bg-primary text-primary-foreground font-bold text-lg h-14 hover:bg-primary/90 shadow-md"
                             onClick={handleStart}
                         >
-                            Enter Laboratory <ArrowRight className="ml-2 h-5 w-5" />
+                            Enter Lab <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
 
                         <div className="relative my-4">
