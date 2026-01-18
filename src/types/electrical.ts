@@ -51,3 +51,10 @@ export interface ValidationError {
   message: string;
   requiredComponents: string[];
 }
+
+// Circuit status for validation
+export interface CircuitStatus {
+  isClosed: boolean;
+  message: string;
+  isWorking: boolean; // Indicates if devices should be shown as working
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, AlertOctagon } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, ArrowRight, AlertOctagon, Zap } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ConnectionValidationResult, CorrectConnection } from '@/utils/wiringLogic';
 import { WIRE_COLORS } from '@/constants/electricalComponents';
@@ -15,7 +15,7 @@ export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps>
 }) => {
   if (!validationResult || !isManualMode) return null;
 
-  const { isValid, incorrectEdges, missingConnections, score, totalExpected, correctEdges } = validationResult;
+  const { isValid, incorrectEdges, missingConnections, score, totalExpected, correctEdges, circuitStatus } = validationResult;
 
   const getWireColorStyle = (wireType: 'live' | 'neutral' | 'earth' | 'dc') => {
     const colors = {
@@ -44,12 +44,11 @@ export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps>
     </div>
   );
 
-  // Group incorrect edges by severity (Short Circuit vs Wrong Connection)
   const shortCircuits = incorrectEdges.filter(e => e.reason.includes('Short Circuit'));
   const otherErrors = incorrectEdges.filter(e => !e.reason.includes('Short Circuit'));
 
   return (
-    <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden flex flex-col max-h-[500px]">
+    <div className="navy-panel overflow-hidden flex flex-col max-h-[500px]">
       {/* Header */}
       <div className={`p-3 ${isValid ? 'bg-emerald-500/10' : 'bg-amber-500/10'}`}>
         <div className="flex items-center justify-between">
@@ -85,21 +84,21 @@ export const ConnectionValidationPanel: React.FC<ConnectionValidationPanelProps>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
           {/* Circuit Closure Status */}
-          <div className={`p-3 rounded-lg border ${validationResult.circuitStatus.isClosed
+          <div className={`p-3 rounded-lg border ${circuitStatus.isClosed
             ? 'bg-emerald-500/10 border-emerald-500/30'
             : 'bg-destructive/10 border-destructive/30'
             }`}>
-            <h4 className={`text-xs font-bold flex items-center gap-2 ${validationResult.circuitStatus.isClosed ? 'text-emerald-600' : 'text-destructive'
+            <h4 className={`text-xs font-bold flex items-center gap-2 ${circuitStatus.isClosed ? 'text-emerald-600' : 'text-destructive'
               }`}>
-              {validationResult.circuitStatus.isClosed ? (
-                <CheckCircle2 className="w-4 h-4" />
+              {circuitStatus.isClosed ? (
+                <Zap className="w-4 h-4" />
               ) : (
                 <AlertOctagon className="w-4 h-4" />
               )}
-              {validationResult.circuitStatus.isClosed ? 'Circuit Closed' : 'Open Circuit'}
+              {circuitStatus.isClosed ? 'Circuit Closed - Devices Working!' : 'Open Circuit'}
             </h4>
             <p className="text-xs mt-1 text-muted-foreground">
-              {validationResult.circuitStatus.message}
+              {circuitStatus.message}
             </p>
           </div>
 

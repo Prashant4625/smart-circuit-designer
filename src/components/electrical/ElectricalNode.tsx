@@ -11,6 +11,7 @@ interface ElectricalNodeData {
   label: string;
   onRemove?: (nodeId: string) => void;
   onDuplicate?: (nodeId: string) => void;
+  isWorking?: boolean;
 }
 
 export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, selected }) => {
@@ -18,11 +19,15 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
   if (!component) return null;
 
-  // ... (existing terminal logic) ...
   const topTerminals = component.terminals.filter(t => t.position === 'top');
   const bottomTerminals = component.terminals.filter(t => t.position === 'bottom');
   const leftTerminals = component.terminals.filter(t => t.position === 'left');
   const rightTerminals = component.terminals.filter(t => t.position === 'right');
+
+  const isFan = data.componentId === 'fan';
+  const isBulb = data.componentId === 'light-bulb';
+  const isTube = data.componentId === 'light-tube';
+  const isWorking = data.isWorking;
 
   const renderHandle = (
     terminal: typeof component.terminals[0],
@@ -30,7 +35,6 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
     total: number,
     position: Position
   ) => {
-    // ... (existing renderHandle logic) ...
     const isHorizontal = position === Position.Top || position === Position.Bottom;
     const offset = ((index + 1) / (total + 1)) * 100;
 
@@ -87,6 +91,8 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         relative bg-card border-2 rounded-xl p-3 shadow-lg transition-all duration-200 cursor-move group
         ${selected ? 'border-primary shadow-xl shadow-primary/20 ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground/50'}
         hover:shadow-xl
+        ${isWorking && isBulb ? 'bg-yellow-50' : ''}
+        ${isWorking && isTube ? 'bg-blue-50' : ''}
       `}
       style={{ minWidth: 110, minHeight: 90 }}
     >
@@ -101,12 +107,12 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         <X className="w-3 h-3" />
       </Button>
 
-      {/* Duplicate Button - Only visible when selected */}
+      {/* Duplicate Button */}
       {selected && data.onDuplicate && (
         <Button
           variant="default"
           size="icon"
-          className="absolute -top-2 -left-2 w-6 h-6 rounded-full z-10 shadow-md bg-green-600 hover:bg-green-700 text-white"
+          className="absolute -top-2 -left-2 w-6 h-6 rounded-full z-10 shadow-md bg-emerald-600 hover:bg-emerald-700 text-primary-foreground"
           onClick={handleDuplicate}
           title="Duplicate Component"
         >
@@ -134,19 +140,37 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         renderHandle(terminal, index, rightTerminals.length, Position.Right)
       )}
 
-      {/* Component Content */}
+      {/* Component Content with Working State Indicators */}
       <div className="flex flex-col items-center gap-1.5">
-        <ComponentIcon type={component.icon} className="w-14 h-14" />
+        <div className={`relative ${isWorking && isFan ? 'animate-fan-spin' : ''}`}>
+          <ComponentIcon 
+            type={component.icon} 
+            className={`w-14 h-14 ${isWorking && (isBulb || isTube) ? 'bulb-glow' : ''}`}
+          />
+          {/* Glowing effect for bulb */}
+          {isWorking && isBulb && (
+            <div className="absolute inset-0 bg-yellow-400/40 rounded-full blur-xl animate-pulse" />
+          )}
+          {/* Glowing effect for tube */}
+          {isWorking && isTube && (
+            <div className="absolute inset-0 bg-blue-300/40 rounded-full blur-xl animate-pulse" />
+          )}
+        </div>
         <span className="text-xs font-semibold text-foreground text-center leading-tight max-w-[100px]">
           {component.name}
         </span>
+        {/* Working status badge */}
+        {isWorking && (isFan || isBulb || isTube) && (
+          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full animate-pulse">
+            ⚡ WORKING
+          </span>
+        )}
       </div>
 
       {/* Selection Indicator */}
       {selected && (
         <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center pointer-events-none">
-          {/* Centered selection dot instead of top-left to avoid overlap with duplicate button */}
-          <div className="w-2 h-2 bg-white rounded-full" />
+          <div className="w-2 h-2 bg-primary-foreground rounded-full" />
         </div>
       )}
 
