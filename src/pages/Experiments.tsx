@@ -1,10 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Zap, Play, Info } from 'lucide-react';
+import { ArrowLeft, Zap, Play, Info, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 
 interface Experiment {
     id: string;
@@ -36,6 +44,7 @@ const experiments: Experiment[] = [
 
 const Experiments = () => {
     const navigate = useNavigate();
+    const [selectedExperiment, setSelectedExperiment] = useState<Experiment | null>(null);
 
     const handleStartExperiment = (exp: Experiment) => {
         navigate('/lab', { state: { projectName: exp.title } });
@@ -56,65 +65,93 @@ const Experiments = () => {
             </header>
 
             {/* Content */}
-            <main className="container mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <main className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="grid gap-4">
                     {experiments.map((exp) => (
-                        <Card key={exp.id} className="bg-card border border-border hover:border-primary/50 transition-colors group flex flex-col overflow-hidden shadow-lg">
-                            {exp.image && (
-                                <div className="w-full bg-card p-4">
-                                    <AspectRatio ratio={16 / 9}>
-                                        <img
-                                            src={exp.image}
-                                            alt={exp.title}
-                                            className="object-contain w-full h-full"
-                                        />
-                                    </AspectRatio>
+                        <Card
+                            key={exp.id}
+                            className="bg-card border border-border hover:border-primary/50 transition-all cursor-pointer hover:shadow-md group"
+                            onClick={() => setSelectedExperiment(exp)}
+                        >
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-foreground group-hover:text-primary transition-colors text-lg flex items-center gap-2">
+                                        {exp.title}
+                                        <Badge variant="outline" className={`ml-2 text-xs font-normal
+                      ${exp.difficulty === 'Beginner' ? 'border-green-500 text-green-500' :
+                                                exp.difficulty === 'Intermediate' ? 'border-yellow-500 text-yellow-500' :
+                                                    'border-red-500 text-red-500'}
+                    `}>
+                                            {exp.difficulty}
+                                        </Badge>
+                                    </CardTitle>
+                                    <CardDescription className="text-muted-foreground line-clamp-1">
+                                        {exp.description}
+                                    </CardDescription>
                                 </div>
-                            )}
-
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="text-foreground group-hover:text-primary transition-colors text-lg">{exp.title}</CardTitle>
-                                    <Badge variant="outline" className={`
-                    ${exp.difficulty === 'Beginner' ? 'border-green-500 text-green-500' :
-                                            exp.difficulty === 'Intermediate' ? 'border-yellow-500 text-yellow-500' :
-                                                'border-red-500 text-red-500'}
-                  `}>
-                                        {exp.difficulty}
-                                    </Badge>
-                                </div>
-                                <CardDescription className="text-muted-foreground">{exp.description}</CardDescription>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                             </CardHeader>
-
-                            <CardContent className="flex-1">
-                                {exp.components && (
-                                    <div className="bg-card/60 p-3 rounded-md border border-border">
-                                        <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-                                            <Info className="w-3 h-3" /> REQUIRED COMPONENTS
-                                        </p>
-                                        <div className="flex flex-wrap gap-1">
-                                            {exp.components.map((comp, i) => (
-                                                <span key={i} className="text-xs bg-card/80 text-muted-foreground px-2 py-1 rounded">
-                                                    {comp}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-
-                            <CardFooter>
-                                <Button
-                                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 border border-border hover:border-primary transition-all shadow-md"
-                                    onClick={() => handleStartExperiment(exp)}
-                                >
-                                    <Play className="mr-2 h-4 w-4" /> Start Experiment
-                                </Button>
-                            </CardFooter>
                         </Card>
                     ))}
                 </div>
             </main>
+
+            {/* Details Dialog */}
+            <Dialog open={!!selectedExperiment} onOpenChange={(open) => !open && setSelectedExperiment(null)}>
+                <DialogContent className="sm:max-w-[600px] bg-card border-border">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+                            {selectedExperiment?.title}
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
+                            {selectedExperiment?.description}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-4">
+                        {/* Reference Image */}
+                        {selectedExperiment?.image && (
+                            <div className="rounded-lg overflow-hidden border border-border bg-white p-2">
+                                <AspectRatio ratio={16 / 9}>
+                                    <img
+                                        src={selectedExperiment.image}
+                                        alt={selectedExperiment.title}
+                                        className="object-contain w-full h-full"
+                                    />
+                                </AspectRatio>
+                            </div>
+                        )}
+
+                        {/* Components List */}
+                        {selectedExperiment?.components && (
+                            <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                                    <Info className="w-4 h-4 text-primary" /> Required Components
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedExperiment.components.map((comp, i) => (
+                                        <Badge key={i} variant="secondary" className="bg-card border-border text-muted-foreground">
+                                            {comp}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setSelectedExperiment(null)}>
+                            Close
+                        </Button>
+                        <Button
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            onClick={() => selectedExperiment && handleStartExperiment(selectedExperiment)}
+                        >
+                            <Play className="mr-2 h-4 w-4" /> Start Experiment
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -3,7 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { ELECTRICAL_COMPONENTS } from '@/constants/electricalComponents';
 import { ComponentIcon } from './ComponentIcon';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ElectricalNodeData {
@@ -11,7 +11,7 @@ interface ElectricalNodeData {
   label: string;
   onRemove?: (nodeId: string) => void;
   onDuplicate?: (nodeId: string) => void;
-  isWorking?: boolean;
+  isActive?: boolean;
 }
 
 export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, selected }) => {
@@ -19,15 +19,20 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
 
   if (!component) return null;
 
+  // Determine if this component should have active effects
+  const canBeActive = ['bulb', 'fan', 'tubelight', 'led'].some(type => component.id.includes(type));
+  const isActive = data.isActive && canBeActive;
+
+  // Visual styles for active state
+  const activeGlowClass = isActive ? 'shadow-[0_0_20px_rgba(250,204,21,0.6)] border-yellow-400 ring-2 ring-yellow-400/50' : '';
+  const activeIconClass = isActive && component.id.includes('fan') ? 'animate-spin duration-[2s]' : '';
+  const activeTextClass = isActive ? 'text-yellow-500 font-bold' : 'text-foreground';
+
+  // Terminal positioning logic
   const topTerminals = component.terminals.filter(t => t.position === 'top');
   const bottomTerminals = component.terminals.filter(t => t.position === 'bottom');
   const leftTerminals = component.terminals.filter(t => t.position === 'left');
   const rightTerminals = component.terminals.filter(t => t.position === 'right');
-
-  const isFan = data.componentId === 'fan';
-  const isBulb = data.componentId === 'light-bulb';
-  const isTube = data.componentId === 'light-tube';
-  const isWorking = data.isWorking;
 
   const renderHandle = (
     terminal: typeof component.terminals[0],
@@ -39,35 +44,24 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
     const offset = ((index + 1) / (total + 1)) * 100;
 
     return (
-      <TooltipProvider key={terminal.id} delayDuration={100}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div>
-              <Handle
-                type="source"
-                position={position}
-                id={terminal.id}
-                style={{
-                  ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
-                  background: terminal.color,
-                  width: 14,
-                  height: 14,
-                  border: '3px solid white',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                  cursor: 'crosshair',
-                  transition: 'transform 0.15s ease',
-                  zIndex: 10,
-                }}
-                className="hover:scale-125"
-              />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side={position === Position.Top ? 'top' : position === Position.Bottom ? 'bottom' : position === Position.Left ? 'left' : 'right'}>
-            <p className="text-xs font-medium">{terminal.label}</p>
-            <p className="text-xs text-muted-foreground">{terminal.type}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Handle
+        key={terminal.id}
+        type="source"
+        position={position}
+        id={terminal.id}
+        style={{
+          ...(isHorizontal ? { left: `${offset}%` } : { top: `${offset}%` }),
+          background: terminal.color,
+          width: 14,
+          height: 14,
+          border: '3px solid white',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+          cursor: 'crosshair',
+          transition: 'transform 0.15s ease',
+          zIndex: 10,
+        }}
+        className="hover:scale-125"
+      />
     );
   };
 
@@ -88,14 +82,21 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
   return (
     <div
       className={`
-        relative bg-card border-2 rounded-xl p-3 shadow-lg transition-all duration-200 cursor-move group
+        relative bg-card border-2 rounded-xl p-3 shadow-lg transition-all duration-300 cursor-move group
         ${selected ? 'border-primary shadow-xl shadow-primary/20 ring-2 ring-primary/20' : 'border-border hover:border-muted-foreground/50'}
+        ${activeGlowClass}
         hover:shadow-xl
-        ${isWorking && isBulb ? 'bg-yellow-50' : ''}
-        ${isWorking && isTube ? 'bg-blue-50' : ''}
       `}
       style={{ minWidth: 110, minHeight: 90 }}
     >
+      {/* Active Status Badge */}
+      {isActive && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 z-20 animate-bounce">
+          <Zap className="w-3 h-3 fill-current" />
+          {component.id.includes('fan') ? 'ROTATING' : 'GLOWING'}
+        </div>
+      )}
+
       {/* Remove Button */}
       <Button
         variant="destructive"
@@ -107,12 +108,12 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         <X className="w-3 h-3" />
       </Button>
 
-      {/* Duplicate Button */}
+      {/* Duplicate Button - Only visible when selected */}
       {selected && data.onDuplicate && (
         <Button
           variant="default"
           size="icon"
-          className="absolute -top-2 -left-2 w-6 h-6 rounded-full z-10 shadow-md bg-emerald-600 hover:bg-emerald-700 text-primary-foreground"
+          className="absolute -top-2 -left-2 w-6 h-6 rounded-full z-10 shadow-md bg-green-600 hover:bg-green-700 text-white"
           onClick={handleDuplicate}
           title="Duplicate Component"
         >
@@ -140,46 +141,31 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
         renderHandle(terminal, index, rightTerminals.length, Position.Right)
       )}
 
-      {/* Component Content with Working State Indicators */}
+      {/* Component Content */}
       <div className="flex flex-col items-center gap-1.5">
-        <div className={`relative ${isWorking && isFan ? 'animate-fan-spin' : ''}`}>
-          <ComponentIcon 
-            type={component.icon} 
-            className={`w-14 h-14 ${isWorking && (isBulb || isTube) ? 'bulb-glow' : ''}`}
-          />
-          {/* Glowing effect for bulb */}
-          {isWorking && isBulb && (
-            <div className="absolute inset-0 bg-yellow-400/40 rounded-full blur-xl animate-pulse" />
-          )}
-          {/* Glowing effect for tube */}
-          {isWorking && isTube && (
-            <div className="absolute inset-0 bg-blue-300/40 rounded-full blur-xl animate-pulse" />
-          )}
+        <div className={`transition-transform duration-500 ${activeIconClass}`}>
+          <ComponentIcon type={component.icon} className={`w-14 h-14 ${isActive ? 'drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]' : ''}`} />
         </div>
-        <span className="text-xs font-semibold text-foreground text-center leading-tight max-w-[100px]">
+        <span className={`text-xs font-semibold text-center leading-tight max-w-[100px] transition-colors ${activeTextClass}`}>
           {component.name}
         </span>
-        {/* Working status badge */}
-        {isWorking && (isFan || isBulb || isTube) && (
-          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full animate-pulse">
-            ⚡ WORKING
-          </span>
-        )}
       </div>
 
       {/* Selection Indicator */}
-      {selected && (
+      {selected && !isActive && (
         <div className="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-primary rounded-full animate-pulse flex items-center justify-center pointer-events-none">
-          <div className="w-2 h-2 bg-primary-foreground rounded-full" />
+          <div className="w-2 h-2 bg-white rounded-full" />
         </div>
       )}
 
       {/* Category Badge */}
-      <div
-        className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
-      >
-        {component.category}
-      </div>
+      {!isActive && (
+        <div
+          className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground"
+        >
+          {component.category}
+        </div>
+      )}
     </div>
   );
 });
