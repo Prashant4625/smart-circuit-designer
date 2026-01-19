@@ -69,33 +69,40 @@ const Experiments = () => {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col relative">
             {/* Indian Naval Academy Header */}
-            <header className="bg-[#003087] shadow-lg sticky top-0 z-50">
-                <div className="px-4 py-3 flex justify-between items-center">
-                    {/* Left Logo */}
-                    <div className="flex-shrink-0">
-                        <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-16 w-auto object-contain" />
-                    </div>
+            <header className="sticky top-0 z-50">
+                {/* Main Header */}
+                <div className="bg-[#003366] px-6 py-3">
+                    <div className="container mx-auto flex justify-between items-center">
+                        {/* Left Logo */}
+                        <div className="flex-shrink-0 bg-white rounded-full p-1">
+                            <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-14 w-14 object-contain rounded-full" />
+                        </div>
 
-                    {/* Center - Title */}
-                    <div className="flex-1 flex flex-col items-center justify-center mx-4">
-                        <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.2em] uppercase">INDIAN NAVAL ACADEMY</h1>
-                        <p className="text-white/80 text-sm mt-1">Standard Experiments</p>
-                    </div>
+                        {/* Center - Title */}
+                        <div className="flex-1 flex flex-col items-center justify-center mx-4">
+                            <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.2em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+                                INDIAN NAVAL ACADEMY
+                            </h1>
+                            <p className="text-[#FFD700] text-xs mt-0.5 tracking-wider">Standard Experiments</p>
+                        </div>
 
-                    {/* Right Logo */}
-                    <div className="flex-shrink-0">
-                        <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-16 w-auto object-contain" />
+                        {/* Right Logo */}
+                        <div className="flex-shrink-0 bg-white rounded-full p-1">
+                            <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-14 w-14 object-contain rounded-full" />
+                        </div>
                     </div>
                 </div>
+                {/* Gold Accent Border */}
+                <div className="h-1 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]"></div>
 
                 {/* Back Button Bar */}
-                <div className="px-4 py-2 bg-white/10 backdrop-blur-sm border-t border-white/20">
+                <div className="px-4 py-2 bg-[#002244]">
                     <div className="container mx-auto">
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate('/')}
-                            className="text-white hover:text-white hover:bg-white/20"
+                            className="text-[#FFD700] hover:text-white hover:bg-white/20"
                         >
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Back to Home

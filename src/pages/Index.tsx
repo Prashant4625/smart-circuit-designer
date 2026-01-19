@@ -145,33 +145,40 @@ const Index = () => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Indian Naval Academy Header */}
-      <header className="flex-shrink-0 bg-[#003087] shadow-lg">
-        <div className="px-4 py-3 flex justify-between items-center">
-          {/* Left Logo */}
-          <div className="flex-shrink-0">
-            <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-16 w-auto object-contain" />
-          </div>
+      <header className="flex-shrink-0">
+        {/* Main Header */}
+        <div className="bg-[#003366] px-6 py-3">
+          <div className="flex justify-between items-center">
+            {/* Left Logo */}
+            <div className="flex-shrink-0 bg-white rounded-full p-1">
+              <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-12 w-12 object-contain rounded-full" />
+            </div>
 
-          {/* Center - Title and Experiment Name */}
-          <div className="flex-1 flex flex-col items-center justify-center mx-4">
-            <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.2em] uppercase">INDIAN NAVAL ACADEMY</h1>
-            <p className="text-white/80 text-sm mt-1">Virtual Electrical Lab</p>
-          </div>
+            {/* Center - Title and Experiment Name */}
+            <div className="flex-1 flex flex-col items-center justify-center mx-4">
+              <h1 className="text-white text-lg md:text-2xl font-bold tracking-[0.2em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+                INDIAN NAVAL ACADEMY
+              </h1>
+              <p className="text-[#FFD700] text-xs mt-0.5 tracking-wider">Virtual Electrical Lab</p>
+            </div>
 
-          {/* Right Logo */}
-          <div className="flex-shrink-0">
-            <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-16 w-auto object-contain" />
+            {/* Right Logo */}
+            <div className="flex-shrink-0 bg-white rounded-full p-1">
+              <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-12 w-12 object-contain rounded-full" />
+            </div>
           </div>
         </div>
+        {/* Gold Accent Border */}
+        <div className="h-1 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]"></div>
 
         {/* Experiment Name Bar */}
-        <div className="px-4 py-2 bg-white/10 backdrop-blur-sm border-t border-white/20">
+        <div className="px-4 py-2 bg-[#002244]">
           <div className="flex items-center justify-center gap-2">
-            <span className="text-sm font-medium text-white">Experiment:</span>
+            <span className="text-sm font-medium text-[#FFD700]">Experiment:</span>
             <Input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="w-64 h-8 bg-white/90 text-gray-900"
+              className="w-64 h-8 bg-white/90 text-gray-900 border-[#FFD700]"
               placeholder="Experiment Name"
             />
           </div>
