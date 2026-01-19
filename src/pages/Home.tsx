@@ -15,23 +15,30 @@ const Home = () => {
         <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
 
             {/* Indian Naval Academy Header Bar */}
-            <nav className="bg-[#003087] p-3 sticky top-0 z-50 shadow-lg">
-                <div className="container mx-auto flex justify-between items-center">
-                    {/* Left Logo */}
-                    <div className="flex-shrink-0">
-                        <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-20 w-auto object-contain" />
-                    </div>
+            <nav className="sticky top-0 z-50">
+                {/* Main Header */}
+                <div className="bg-[#003366] px-6 py-4">
+                    <div className="container mx-auto flex justify-between items-center">
+                        {/* Left Logo */}
+                        <div className="flex-shrink-0 bg-white rounded-full p-1">
+                            <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-16 w-16 object-contain rounded-full" />
+                        </div>
 
-                    {/* Center Text */}
-                    <div className="flex-1 flex justify-center items-center">
-                        <span className="text-white text-2xl md:text-3xl font-bold tracking-[0.3em] uppercase">INDIAN NAVAL ACADEMY</span>
-                    </div>
+                        {/* Center Text */}
+                        <div className="flex-1 flex justify-center items-center">
+                            <h1 className="text-white text-2xl md:text-4xl font-bold tracking-[0.25em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+                                INDIAN NAVAL ACADEMY
+                            </h1>
+                        </div>
 
-                    {/* Right Logo */}
-                    <div className="flex-shrink-0">
-                        <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-20 w-auto object-contain" />
+                        {/* Right Logo */}
+                        <div className="flex-shrink-0 bg-white rounded-full p-1">
+                            <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-16 w-16 object-contain rounded-full" />
+                        </div>
                     </div>
                 </div>
+                {/* Gold Accent Border */}
+                <div className="h-1.5 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]"></div>
             </nav>
 
             {/* Hero Section */}
