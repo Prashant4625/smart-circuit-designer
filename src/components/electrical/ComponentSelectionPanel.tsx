@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ELECTRICAL_COMPONENTS, COMPONENT_CATEGORIES } from '@/constants/electricalComponents';
 import { ComponentCard } from './ComponentCard';
 import { ValidationError, ElectricalComponent } from '@/types/electrical';
+import { Anchor, Zap, ToggleLeft, Lightbulb } from 'lucide-react';
 
 interface ComponentSelectionPanelProps {
   selectedComponents: string[];
@@ -11,6 +12,19 @@ interface ComponentSelectionPanelProps {
   onAddRequired: (componentId: string) => void;
   onDragStart?: (event: React.DragEvent, component: ElectricalComponent) => void;
 }
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'power':
+      return <Zap className="w-3.5 h-3.5" />;
+    case 'control':
+      return <ToggleLeft className="w-3.5 h-3.5" />;
+    case 'load':
+      return <Lightbulb className="w-3.5 h-3.5" />;
+    default:
+      return <Zap className="w-3.5 h-3.5" />;
+  }
+};
 
 export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = ({
   selectedComponents,
@@ -43,28 +57,40 @@ export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = (
   }, [onDragStart]);
 
   return (
-    <div className="h-full flex flex-col bg-card border-r border-border">
+    <div className="h-full flex flex-col navy-panel">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-bold text-foreground">Components</h2>
-        <p className="text-sm text-muted-foreground">
-          Click to add components to canvas
-        </p>
+      <div className="navy-panel-header flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Anchor className="w-4 h-4 text-[#FFD700]" />
+          <span>Components</span>
+        </div>
         {selectedComponents.length > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            <span className="font-medium text-primary">{selectedComponents.length}</span> components selected
-          </div>
+          <span className="navy-badge-gold text-[10px]">
+            {selectedComponents.length} Selected
+          </span>
         )}
       </div>
+      
+      <div className="px-4 py-2 bg-gradient-to-b from-[#003366]/5 to-transparent border-b border-[#003366]/10">
+        <p className="text-xs text-[#003366]/60">
+          Click to add components to canvas
+        </p>
+      </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
+      <ScrollArea className="flex-1 navy-scrollbar">
+        <div className="p-4 space-y-5">
           {sortedCategories.map(([category, { label }]) => (
             <div key={category}>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                {label}
-              </h3>
-              <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 rounded bg-gradient-to-b from-[#003366] to-[#001a33] text-[#FFD700]">
+                  {getCategoryIcon(category)}
+                </div>
+                <h3 className="text-xs font-bold text-[#003366] uppercase tracking-wider">
+                  {label}
+                </h3>
+                <div className="flex-1 h-px bg-gradient-to-r from-[#003366]/20 to-transparent" />
+              </div>
+              <div className="space-y-3 pl-1">
                 {groupedComponents[category]?.map((component) => {
                   const isSelected = selectedComponents.includes(component.id);
                   const error = validationErrors.find(
@@ -88,6 +114,15 @@ export const ComponentSelectionPanel: React.FC<ComponentSelectionPanelProps> = (
           ))}
         </div>
       </ScrollArea>
+      
+      {/* Footer decoration */}
+      <div className="p-3 border-t border-[#003366]/10 bg-gradient-to-t from-[#003366]/5 to-transparent">
+        <div className="flex items-center justify-center gap-2 text-[#003366]/40">
+          <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#FFD700]/40" />
+          <Anchor className="w-3 h-3 text-[#FFD700]/50" />
+          <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#FFD700]/40" />
+        </div>
+      </div>
     </div>
   );
 };

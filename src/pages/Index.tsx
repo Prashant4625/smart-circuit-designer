@@ -145,41 +145,41 @@ const Index = () => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Indian Naval Academy Header */}
-      <header className="flex-shrink-0">
+      <header className="flex-shrink-0 shadow-lg">
         {/* Main Header */}
-        <div className="bg-[#003366] px-6 py-3">
+        <div className="bg-gradient-to-b from-[#003366] to-[#002244] px-6 py-2.5">
           <div className="flex justify-between items-center">
             {/* Left Logo */}
-            <div className="flex-shrink-0 bg-white rounded-full p-1">
-              <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-12 w-12 object-contain rounded-full" />
+            <div className="flex-shrink-0 bg-white rounded-full p-1 shadow-md ring-2 ring-[#FFD700]/20">
+              <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-11 w-11 object-contain rounded-full" />
             </div>
 
             {/* Center - Title and Experiment Name */}
             <div className="flex-1 flex flex-col items-center justify-center mx-4">
-              <h1 className="text-white text-lg md:text-2xl font-bold tracking-[0.2em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+              <h1 className="text-white text-lg md:text-xl font-bold tracking-[0.2em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
                 INDIAN NAVAL ACADEMY
               </h1>
-              <p className="text-[#FFD700] text-xs mt-0.5 tracking-wider">Virtual Electrical Lab</p>
+              <p className="text-[#FFD700] text-[10px] mt-0.5 tracking-[0.2em] uppercase font-medium">Virtual Electrical Lab</p>
             </div>
 
             {/* Right Logo */}
-            <div className="flex-shrink-0 bg-white rounded-full p-1">
-              <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-12 w-12 object-contain rounded-full" />
+            <div className="flex-shrink-0 bg-white rounded-full p-1 shadow-md ring-2 ring-[#FFD700]/20">
+              <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-11 w-11 object-contain rounded-full" />
             </div>
           </div>
         </div>
         {/* Gold Accent Border */}
-        <div className="h-1 bg-gradient-to-r from-[#B8860B] via-[#FFD700] to-[#B8860B]"></div>
+        <div className="h-1 bg-gradient-to-r from-[#8B6914] via-[#FFD700] to-[#8B6914]"></div>
 
         {/* Experiment Name Bar */}
-        <div className="px-4 py-2 bg-[#002244]">
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-sm font-medium text-[#FFD700]">Experiment:</span>
+        <div className="px-4 py-1.5 bg-gradient-to-r from-[#001a33] via-[#002244] to-[#001a33] border-b border-[#FFD700]/10">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">Experiment:</span>
             <Input
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
-              className="w-64 h-8 bg-white/90 text-gray-900 border-[#FFD700]"
-              placeholder="Experiment Name"
+              className="w-64 h-7 bg-white/95 text-gray-900 border-[#FFD700]/30 text-sm focus:ring-[#FFD700]/50 focus:border-[#FFD700]/50"
+              placeholder="Enter experiment name"
             />
           </div>
         </div>
@@ -203,7 +203,7 @@ const Index = () => {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-80 flex-shrink-0 overflow-hidden">
+        <div className="w-80 flex-shrink-0 overflow-hidden border-r border-[#003366]/10">
           <ComponentSelectionPanel
             selectedComponents={selectedComponents}
             validationErrors={validationErrors}
@@ -214,11 +214,18 @@ const Index = () => {
         </div>
 
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          <div ref={canvasContainerRef} className="flex-1 relative">
+          <div ref={canvasContainerRef} className="flex-1 relative canvas-grid">
             {nodes.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
-                <div className="text-center p-8">
-                  <p className="text-muted-foreground">Select components from the left panel to start</p>
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+                <div className="text-center p-8 navy-card max-w-md">
+                  <div className="navy-card-header">Getting Started</div>
+                  <div className="p-6">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-b from-[#003366] to-[#001a33] flex items-center justify-center">
+                      <Wand2 className="w-8 h-8 text-[#FFD700]" />
+                    </div>
+                    <p className="text-[#003366]/70 mb-2">Select components from the left panel to begin building your circuit diagram.</p>
+                    <p className="text-xs text-[#003366]/50">Click on components or drag them onto the canvas</p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -237,8 +244,8 @@ const Index = () => {
                 />
                 {edges.length === 0 && !isManualMode && (
                   <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
-                    <Button onClick={handleAutoWire} className="gap-2 shadow-lg animate-pulse" size="lg">
-                      <Wand2 className="w-4 h-4" />
+                    <Button onClick={handleAutoWire} className="navy-btn-gold gap-2 shadow-xl px-6 py-3 text-base animate-pulse">
+                      <Wand2 className="w-5 h-5" />
                       Auto-Connect Wires
                     </Button>
                   </div>
