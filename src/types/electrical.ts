@@ -1,5 +1,5 @@
 // Terminal types for electrical components
-export type TerminalType = 'L' | 'N' | 'E' | 'DC+' | 'DC-' | 'AC_OUT_L' | 'AC_OUT_N' | 'IN' | 'OUT';
+export type TerminalType = 'L' | 'N' | 'E' | 'DC+' | 'DC-' | 'AC_OUT_L' | 'AC_OUT_N' | 'IN' | 'OUT' | 'C' | 'B' | 'EM' | 'ANODE' | 'CATHODE' | 'T1' | 'T2' | 'POS' | 'NEG';
 
 export interface Terminal {
   id: string;

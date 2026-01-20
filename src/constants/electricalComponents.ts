@@ -161,6 +161,75 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     ],
     requiredBy: ['inverter'],
   },
+
+  // Fire Alarm / Electronics Components
+  {
+    id: 'battery-9v',
+    name: '9V Battery',
+    category: 'power',
+    description: '9V DC Battery source',
+    icon: 'battery-9v', // You might need to add icon support later or map it
+    terminals: [
+      { id: 'bat9-pos', type: 'POS', label: 'Positive', position: 'top', color: '#ef4444' },
+      { id: 'bat9-neg', type: 'NEG', label: 'Negative', position: 'top', color: '#000000' },
+    ],
+  },
+  {
+    id: 'transistor-bc547',
+    name: 'BC547 NPN',
+    category: 'control',
+    description: 'NPN Transistor for switching',
+    icon: 'transistor',
+    terminals: [
+      { id: 'q-c', type: 'C', label: 'Collector', position: 'top', color: '#ef4444' }, // Collector
+      { id: 'q-b', type: 'B', label: 'Base', position: 'left', color: '#3b82f6' },      // Base
+      { id: 'q-e', type: 'EM', label: 'Emitter', position: 'bottom', color: '#22c55e' }, // Emitter
+    ],
+  },
+  {
+    id: 'resistor',
+    name: 'Resistor',
+    category: 'load',
+    description: 'Current limiting resistor',
+    icon: 'resistor',
+    terminals: [
+      { id: 'r-t1', type: 'T1', label: 'T1', position: 'left', color: '#fbbf24' },
+      { id: 'r-t2', type: 'T2', label: 'T2', position: 'right', color: '#fbbf24' },
+    ],
+  },
+  {
+    id: 'buzzer',
+    name: 'Buzzer',
+    category: 'load',
+    description: 'Piezo electric buzzer',
+    icon: 'buzzer',
+    terminals: [
+      { id: 'buz-pos', type: 'POS', label: 'Positive', position: 'left', color: '#ef4444' },
+      { id: 'buz-neg', type: 'NEG', label: 'Negative', position: 'right', color: '#000000' },
+    ],
+  },
+  {
+    id: 'led',
+    name: 'Red LED',
+    category: 'load',
+    description: 'Light Emitting Diode',
+    icon: 'led',
+    terminals: [
+      { id: 'led-a', type: 'ANODE', label: 'Anode (+)', position: 'bottom', color: '#ef4444' },
+      { id: 'led-c', type: 'CATHODE', label: 'Cathode (-)', position: 'bottom', color: '#000000' },
+    ],
+  },
+  {
+    id: 'ir-sensor',
+    name: 'IR Sensor',
+    category: 'control', // Acts as a sensor/control
+    description: 'IR Receiver Diode',
+    icon: 'ir-sensor',
+    terminals: [
+      { id: 'ir-a', type: 'ANODE', label: 'Anode', position: 'bottom', color: '#ef4444' },
+      { id: 'ir-c', type: 'CATHODE', label: 'Cathode', position: 'bottom', color: '#000000' },
+    ],
+  },
 ];
 
 export const WIRE_COLORS = {

@@ -453,6 +453,72 @@ export function getCorrectConnections(
     });
   }
 
+  // FIRE ALARM CIRCUIT VALIDATION
+  const hasBat9V = selectedComponentIds.includes('battery-9v');
+  const hasTransistor = selectedComponentIds.includes('transistor-bc547');
+  const hasBuzzer = selectedComponentIds.includes('buzzer');
+  const hasResistor = selectedComponentIds.includes('resistor');
+  const hasIR = selectedComponentIds.includes('ir-sensor');
+  const hasLED = selectedComponentIds.includes('led');
+
+  if (hasBat9V && hasTransistor && hasBuzzer && hasResistor && hasIR && hasLED) {
+    // 1. Battery(+) -> Buzzer(+)
+    connections.push({
+      source: 'battery-9v', sourceHandle: 'bat9-pos',
+      target: 'buzzer', targetHandle: 'buz-pos',
+      wireType: 'dc', description: 'Battery Positive to Buzzer Positive'
+    });
+
+    // 2. Buzzer(-) -> Transistor(Collector)
+    connections.push({
+      source: 'buzzer', sourceHandle: 'buz-neg',
+      target: 'transistor-bc547', targetHandle: 'q-c',
+      wireType: 'dc', description: 'Buzzer Negative to Transistor Collector'
+    });
+
+    // 3. Emitter -> GND (Battery-)
+    connections.push({
+      source: 'transistor-bc547', sourceHandle: 'q-e',
+      target: 'battery-9v', targetHandle: 'bat9-neg',
+      wireType: 'dc', description: 'Transistor Emitter to Battery Negative'
+    });
+
+    // 4. Battery+ -> Resistor T1
+    connections.push({
+      source: 'battery-9v', sourceHandle: 'bat9-pos',
+      target: 'resistor', targetHandle: 'r-t1',
+      wireType: 'dc', description: 'Battery Positive to Resistor'
+    });
+
+    // 5. Resistor T2 -> IR Sensor Anode
+    connections.push({
+      source: 'resistor', sourceHandle: 'r-t2',
+      target: 'ir-sensor', targetHandle: 'ir-a',
+      wireType: 'dc', description: 'Resistor to IR Sensor Anode'
+    });
+
+    // 6. IR Sensor Cathode -> Transistor Base
+    connections.push({
+      source: 'ir-sensor', sourceHandle: 'ir-c',
+      target: 'transistor-bc547', targetHandle: 'q-b',
+      wireType: 'dc', description: 'IR Sensor Cathode to Transistor Base'
+    });
+
+    // 7. LED Anode -> Battery Positive (Parallel)
+    connections.push({
+      source: 'battery-9v', sourceHandle: 'bat9-pos',
+      target: 'led', targetHandle: 'led-a',
+      wireType: 'dc', description: 'Battery Positive to LED Anode'
+    });
+
+    // 8. LED Cathode -> Transistor Collector (Parallel with Buzzer)
+    connections.push({
+      source: 'led', sourceHandle: 'led-c',
+      target: 'transistor-bc547', targetHandle: 'q-c',
+      wireType: 'dc', description: 'LED Cathode to Transistor Collector'
+    });
+  }
+
   return connections;
 }
 

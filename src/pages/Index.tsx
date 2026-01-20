@@ -173,14 +173,24 @@ const Index = () => {
 
         {/* Experiment Name Bar */}
         <div className="px-4 py-1.5 bg-gradient-to-r from-[#001a33] via-[#002244] to-[#001a33] border-b border-[#FFD700]/10">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">Experiment:</span>
-            <Input
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              className="w-64 h-7 bg-white/95 text-gray-900 border-[#FFD700]/30 text-sm focus:ring-[#FFD700]/50 focus:border-[#FFD700]/50"
-              placeholder="Enter experiment name"
-            />
+          <div className="flex items-center justify-between gap-3 relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[#FFD700] hover:text-white hover:bg-white/10 h-6 px-2 text-xs uppercase tracking-wider absolute left-0"
+              onClick={() => window.location.href = '/'}
+            >
+              ← Home
+            </Button>
+            <div className="flex items-center justify-center gap-3 w-full">
+              <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">Experiment:</span>
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                className="w-64 h-7 bg-white/95 text-gray-900 border-[#FFD700]/30 text-sm focus:ring-[#FFD700]/50 focus:border-[#FFD700]/50"
+                placeholder="Enter experiment name"
+              />
+            </div>
           </div>
         </div>
       </header>

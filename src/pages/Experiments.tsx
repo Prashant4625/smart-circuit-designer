@@ -55,6 +55,14 @@ const experiments: Experiment[] = [
         difficulty: 'Intermediate',
         image: '/experiments/parallel-circuit.png',
         components: ['AC Supply', 'MCB', 'Distribution Board', 'Switch', 'Light Bulb', 'Light Bulb', 'Light Bulb']
+    },
+    {
+        id: 'fire-alarm',
+        title: 'Fire Alarm Circuit',
+        description: 'Build a fire alarm using an IR sensor, transistor, and buzzer.',
+        difficulty: 'Advanced',
+        image: '/experiments/fire-alarm.png', // Placeholder, user will provide or we use generic
+        components: ['9V Battery', 'Buzzer', 'BC547 Transistor', 'Resistor', 'IR Sensor', 'LED']
     }
 ];
 
