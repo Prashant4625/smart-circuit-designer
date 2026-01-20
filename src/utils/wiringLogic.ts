@@ -453,7 +453,7 @@ export function getCorrectConnections(
     });
   }
 
-  // FIRE ALARM CIRCUIT VALIDATION
+  // FIRE ALARM CIRCUIT VALIDATION (IR Sensor + BC547 + Buzzer + LED)
   const hasBat9V = selectedComponentIds.includes('battery-9v');
   const hasTransistor = selectedComponentIds.includes('transistor-bc547');
   const hasBuzzer = selectedComponentIds.includes('buzzer');
@@ -516,6 +516,112 @@ export function getCorrectConnections(
       source: 'led', sourceHandle: 'led-c',
       target: 'transistor-bc547', targetHandle: 'q-c',
       wireType: 'dc', description: 'LED Cathode to Transistor Collector'
+    });
+  }
+
+  // DC MOTOR SPEED CONTROL CIRCUIT (Battery 12V + MOSFET + Potentiometer + DC Motor)
+  const hasBat12V = selectedComponentIds.includes('battery');
+  const hasMosfet = selectedComponentIds.includes('mosfet-irf');
+  const hasPotentiometer = selectedComponentIds.includes('potentiometer');
+  const hasDCMotor = selectedComponentIds.includes('dc-motor');
+
+  if (hasBat12V && hasMosfet && hasPotentiometer && hasDCMotor) {
+    // 1. Battery(+) -> DC Motor(+)
+    connections.push({
+      source: 'battery', sourceHandle: 'bat-pos',
+      target: 'dc-motor', targetHandle: 'dcm-pos',
+      wireType: 'dc', description: 'Battery Positive to DC Motor Positive'
+    });
+
+    // 2. DC Motor(-) -> MOSFET Drain
+    connections.push({
+      source: 'dc-motor', sourceHandle: 'dcm-neg',
+      target: 'mosfet-irf', targetHandle: 'mos-d',
+      wireType: 'dc', description: 'DC Motor Negative to MOSFET Drain'
+    });
+
+    // 3. MOSFET Source -> Battery(-)
+    connections.push({
+      source: 'mosfet-irf', sourceHandle: 'mos-s',
+      target: 'battery', targetHandle: 'bat-neg',
+      wireType: 'dc', description: 'MOSFET Source to Battery Negative'
+    });
+
+    // 4. Potentiometer T2 -> Battery(+)
+    connections.push({
+      source: 'battery', sourceHandle: 'bat-pos',
+      target: 'potentiometer', targetHandle: 'pot-t2',
+      wireType: 'dc', description: 'Battery Positive to Potentiometer T2'
+    });
+
+    // 5. Potentiometer Wiper -> MOSFET Gate
+    connections.push({
+      source: 'potentiometer', sourceHandle: 'pot-wiper',
+      target: 'mosfet-irf', targetHandle: 'mos-g',
+      wireType: 'dc', description: 'Potentiometer Wiper to MOSFET Gate'
+    });
+
+    // 6. Potentiometer T1 -> Battery(-)
+    connections.push({
+      source: 'potentiometer', sourceHandle: 'pot-t1',
+      target: 'battery', targetHandle: 'bat-neg',
+      wireType: 'dc', description: 'Potentiometer T1 to Battery Negative'
+    });
+  }
+
+  // VOLTAGE PROTECTOR CIRCUIT (DP MCB + Voltage Protector + Switch + Single Phase Motor)
+  const hasDPMCB = selectedComponentIds.includes('dp-mcb');
+  const hasVoltageProtector = selectedComponentIds.includes('voltage-protector');
+  const hasSinglePhaseMotor = selectedComponentIds.includes('single-phase-motor');
+
+  if (hasSupply && hasDPMCB && hasVoltageProtector && hasSwitch && hasSinglePhaseMotor) {
+    // 1. Supply Live -> DP MCB Phase In
+    connections.push({
+      source: 'power-supply', sourceHandle: 'supply-l',
+      target: 'dp-mcb', targetHandle: 'dpmcb-in-l',
+      wireType: 'live', description: 'Supply Live to DP MCB Phase Input'
+    });
+
+    // 2. Supply Neutral -> DP MCB Neutral In
+    connections.push({
+      source: 'power-supply', sourceHandle: 'supply-n',
+      target: 'dp-mcb', targetHandle: 'dpmcb-in-n',
+      wireType: 'neutral', description: 'Supply Neutral to DP MCB Neutral Input'
+    });
+
+    // 3. DP MCB Phase Out -> Voltage Protector In Live
+    connections.push({
+      source: 'dp-mcb', sourceHandle: 'dpmcb-out-l',
+      target: 'voltage-protector', targetHandle: 'vp-in-l',
+      wireType: 'live', description: 'DP MCB Output to Voltage Protector Input'
+    });
+
+    // 4. DP MCB Neutral Out -> Voltage Protector In Neutral
+    connections.push({
+      source: 'dp-mcb', sourceHandle: 'dpmcb-out-n',
+      target: 'voltage-protector', targetHandle: 'vp-in-n',
+      wireType: 'neutral', description: 'DP MCB Neutral to Voltage Protector Neutral'
+    });
+
+    // 5. Voltage Protector Out -> Switch In
+    connections.push({
+      source: 'voltage-protector', sourceHandle: 'vp-out-l',
+      target: 'switch', targetHandle: 'sw-in',
+      wireType: 'live', description: 'Voltage Protector Output to Switch'
+    });
+
+    // 6. Switch Out -> Single Phase Motor Live
+    connections.push({
+      source: 'switch', sourceHandle: 'sw-out',
+      target: 'single-phase-motor', targetHandle: 'spm-l',
+      wireType: 'live', description: 'Switch Output to Motor Live'
+    });
+
+    // 7. Voltage Protector Out Neutral -> Motor Neutral
+    connections.push({
+      source: 'voltage-protector', sourceHandle: 'vp-out-n',
+      target: 'single-phase-motor', targetHandle: 'spm-n',
+      wireType: 'neutral', description: 'Voltage Protector Neutral to Motor Neutral'
     });
   }
 
@@ -831,6 +937,56 @@ export function getSmartEdges(nodes: Node[], config: { isSeries: boolean } = { i
       createEdge(db, 'db-out-l1', inverter, 'inv-ac-in-l', 'live');
       createEdge(db, 'db-out-n', inverter, 'inv-ac-in-n', 'neutral');
     }
+  }
+
+  // DC MOTOR SPEED CONTROL CIRCUIT
+  const mosfet = nodes.find(n => n.data.componentId === 'mosfet-irf');
+  const potentiometer = nodes.find(n => n.data.componentId === 'potentiometer');
+  const dcMotor = nodes.find(n => n.data.componentId === 'dc-motor');
+
+  if (battery && mosfet && potentiometer && dcMotor) {
+    createEdge(battery, 'bat-pos', dcMotor, 'dcm-pos', 'dc', '+');
+    createEdge(dcMotor, 'dcm-neg', mosfet, 'mos-d', 'dc');
+    createEdge(mosfet, 'mos-s', battery, 'bat-neg', 'dc', '-');
+    createEdge(battery, 'bat-pos', potentiometer, 'pot-t2', 'dc');
+    createEdge(potentiometer, 'pot-wiper', mosfet, 'mos-g', 'dc');
+    createEdge(potentiometer, 'pot-t1', battery, 'bat-neg', 'dc');
+  }
+
+  // VOLTAGE PROTECTOR CIRCUIT
+  const dpMcb = nodes.find(n => n.data.componentId === 'dp-mcb');
+  const voltageProtector = nodes.find(n => n.data.componentId === 'voltage-protector');
+  const singlePhaseMotor = nodes.find(n => n.data.componentId === 'single-phase-motor');
+  const vpSwitch = switches.find(s => !fans.some(f => f) || switches.length > fans.length) || switches[0];
+
+  if (supply && dpMcb && voltageProtector && vpSwitch && singlePhaseMotor) {
+    createEdge(supply, 'supply-l', dpMcb, 'dpmcb-in-l', 'live', 'P');
+    createEdge(supply, 'supply-n', dpMcb, 'dpmcb-in-n', 'neutral', 'N');
+    createEdge(dpMcb, 'dpmcb-out-l', voltageProtector, 'vp-in-l', 'live');
+    createEdge(dpMcb, 'dpmcb-out-n', voltageProtector, 'vp-in-n', 'neutral');
+    createEdge(voltageProtector, 'vp-out-l', vpSwitch, 'sw-in', 'live');
+    createEdge(vpSwitch, 'sw-out', singlePhaseMotor, 'spm-l', 'live');
+    createEdge(voltageProtector, 'vp-out-n', singlePhaseMotor, 'spm-n', 'neutral');
+  }
+
+  // FIRE ALARM / IR SENSOR CIRCUIT
+  const bat9v = nodes.find(n => n.data.componentId === 'battery-9v');
+  const transistor = nodes.find(n => n.data.componentId === 'transistor-bc547');
+  const buzzer = nodes.find(n => n.data.componentId === 'buzzer');
+  const resistors = nodes.filter(n => n.data.componentId === 'resistor');
+  const irSensor = nodes.find(n => n.data.componentId === 'ir-sensor');
+  const led = nodes.find(n => n.data.componentId === 'led');
+
+  if (bat9v && transistor && buzzer && resistors.length > 0 && irSensor && led) {
+    const resistor = resistors[0];
+    createEdge(bat9v, 'bat9-pos', buzzer, 'buz-pos', 'dc', '+');
+    createEdge(buzzer, 'buz-neg', transistor, 'q-c', 'dc');
+    createEdge(transistor, 'q-e', bat9v, 'bat9-neg', 'dc', '-');
+    createEdge(bat9v, 'bat9-pos', resistor, 'r-t1', 'dc');
+    createEdge(resistor, 'r-t2', irSensor, 'ir-a', 'dc');
+    createEdge(irSensor, 'ir-c', transistor, 'q-b', 'dc');
+    createEdge(bat9v, 'bat9-pos', led, 'led-a', 'dc');
+    createEdge(led, 'led-c', transistor, 'q-c', 'dc');
   }
 
   return edges;
