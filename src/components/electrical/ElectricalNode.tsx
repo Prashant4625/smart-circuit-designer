@@ -20,12 +20,13 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
   if (!component) return null;
 
   // Determine if this component should have active effects
-  const canBeActive = ['bulb', 'fan', 'tubelight', 'led'].some(type => component.id.includes(type));
+  const canBeActive = ['bulb', 'fan', 'tube', 'led', 'dc-motor', 'single-phase-motor', 'buzzer'].some(type => component.id.includes(type));
   const isActive = data.isActive && canBeActive;
 
   // Visual styles for active state
   const activeGlowClass = isActive ? 'shadow-[0_0_20px_rgba(250,204,21,0.6)] border-yellow-400 ring-2 ring-yellow-400/50' : '';
-  const activeIconClass = isActive && component.id.includes('fan') ? 'animate-spin' : '';
+  const isMotor = component.id.includes('fan') || component.id.includes('motor');
+  const activeIconClass = isActive && isMotor ? 'animate-spin' : '';
   const activeTextClass = isActive ? 'text-yellow-500 font-bold' : 'text-foreground';
 
   // Terminal positioning logic
@@ -93,7 +94,7 @@ export const ElectricalNode = memo<NodeProps<ElectricalNodeData>>(({ id, data, s
       {isActive && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 z-20 animate-bounce">
           <Zap className="w-3 h-3 fill-current" />
-          {component.id.includes('fan') ? 'ROTATING' : 'GLOWING'}
+          {isMotor ? 'ROTATING' : component.id.includes('buzzer') ? 'BUZZING' : 'GLOWING'}
         </div>
       )}
 

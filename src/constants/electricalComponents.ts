@@ -31,6 +31,20 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     requires: ['power-supply'],
   },
   {
+    id: 'dp-mcb',
+    name: 'DP MCB',
+    category: 'power',
+    description: 'Double Pole MCB - Disconnects both Live and Neutral',
+    icon: 'dp-mcb',
+    terminals: [
+      { id: 'dpmcb-in-l', type: 'L', label: 'Phase In', position: 'top', color: '#ef4444' },
+      { id: 'dpmcb-in-n', type: 'N', label: 'Neutral In', position: 'top', color: '#3b82f6' },
+      { id: 'dpmcb-out-l', type: 'OUT', label: 'Phase Out', position: 'bottom', color: '#ef4444' },
+      { id: 'dpmcb-out-n', type: 'N', label: 'Neutral Out', position: 'bottom', color: '#3b82f6' },
+    ],
+    requires: ['power-supply'],
+  },
+  {
     id: 'distribution-board',
     name: 'Distribution Board',
     category: 'power',
@@ -69,6 +83,43 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     ],
     requiredBy: ['fan'],
   },
+  {
+    id: 'potentiometer',
+    name: 'Potentiometer 10K',
+    category: 'control',
+    description: '10K Ohm Variable Resistor for speed/voltage control',
+    icon: 'potentiometer',
+    terminals: [
+      { id: 'pot-t1', type: 'T1', label: 'Terminal 1', position: 'left', color: '#3b82f6' },
+      { id: 'pot-wiper', type: 'OUT', label: 'Wiper', position: 'bottom', color: '#f97316' },
+      { id: 'pot-t2', type: 'T2', label: 'Terminal 2', position: 'right', color: '#ef4444' },
+    ],
+  },
+  {
+    id: 'voltage-protector',
+    name: 'Voltage Protector',
+    category: 'control',
+    description: 'Adjustable Voltage Protector with display',
+    icon: 'voltage-protector',
+    terminals: [
+      { id: 'vp-in-l', type: 'L', label: 'Input Live', position: 'top', color: '#ef4444' },
+      { id: 'vp-in-n', type: 'N', label: 'Input Neutral', position: 'top', color: '#3b82f6' },
+      { id: 'vp-out-l', type: 'OUT', label: 'Output Live', position: 'bottom', color: '#ef4444' },
+      { id: 'vp-out-n', type: 'N', label: 'Output Neutral', position: 'bottom', color: '#3b82f6' },
+    ],
+  },
+  {
+    id: 'mosfet-irf',
+    name: 'MOSFET IRF Z44N',
+    category: 'control',
+    description: 'N-Channel Power MOSFET for DC motor control',
+    icon: 'mosfet',
+    terminals: [
+      { id: 'mos-g', type: 'B', label: 'Gate', position: 'left', color: '#3b82f6' },
+      { id: 'mos-d', type: 'C', label: 'Drain', position: 'top', color: '#ef4444' },
+      { id: 'mos-s', type: 'EM', label: 'Source', position: 'bottom', color: '#22c55e' },
+    ],
+  },
   // Load Components
   {
     id: 'fan',
@@ -82,6 +133,28 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
       { id: 'fan-e', type: 'E', label: 'Earth', position: 'left', color: '#22c55e' },
     ],
     requires: ['switch', 'regulator'],
+  },
+  {
+    id: 'dc-motor',
+    name: '12V DC Motor',
+    category: 'load',
+    description: '12V DC Motor for speed control circuits',
+    icon: 'dc-motor',
+    terminals: [
+      { id: 'dcm-pos', type: 'DC+', label: 'Positive', position: 'top', color: '#ef4444' },
+      { id: 'dcm-neg', type: 'DC-', label: 'Negative', position: 'bottom', color: '#000000' },
+    ],
+  },
+  {
+    id: 'single-phase-motor',
+    name: 'Single Phase Motor',
+    category: 'load',
+    description: 'AC Single Phase Induction Motor',
+    icon: 'single-phase-motor',
+    terminals: [
+      { id: 'spm-l', type: 'L', label: 'Live', position: 'top', color: '#ef4444' },
+      { id: 'spm-n', type: 'N', label: 'Neutral', position: 'bottom', color: '#3b82f6' },
+    ],
   },
   {
     id: 'light-bulb',
@@ -151,7 +224,7 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
   },
   {
     id: 'battery',
-    name: 'Battery',
+    name: 'Battery 12V',
     category: 'backup',
     description: '12V Lead-acid or Lithium battery',
     icon: 'battery',
@@ -162,13 +235,13 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     requiredBy: ['inverter'],
   },
 
-  // Fire Alarm / Electronics Components
+  // Electronics / Fire Alarm Components
   {
     id: 'battery-9v',
     name: '9V Battery',
     category: 'power',
     description: '9V DC Battery source',
-    icon: 'battery-9v', // You might need to add icon support later or map it
+    icon: 'battery-9v',
     terminals: [
       { id: 'bat9-pos', type: 'POS', label: 'Positive', position: 'top', color: '#ef4444' },
       { id: 'bat9-neg', type: 'NEG', label: 'Negative', position: 'top', color: '#000000' },
@@ -181,9 +254,9 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
     description: 'NPN Transistor for switching',
     icon: 'transistor',
     terminals: [
-      { id: 'q-c', type: 'C', label: 'Collector', position: 'top', color: '#ef4444' }, // Collector
-      { id: 'q-b', type: 'B', label: 'Base', position: 'left', color: '#3b82f6' },      // Base
-      { id: 'q-e', type: 'EM', label: 'Emitter', position: 'bottom', color: '#22c55e' }, // Emitter
+      { id: 'q-c', type: 'C', label: 'Collector', position: 'top', color: '#ef4444' },
+      { id: 'q-b', type: 'B', label: 'Base', position: 'left', color: '#3b82f6' },
+      { id: 'q-e', type: 'EM', label: 'Emitter', position: 'bottom', color: '#22c55e' },
     ],
   },
   {
@@ -222,7 +295,7 @@ export const ELECTRICAL_COMPONENTS: ElectricalComponent[] = [
   {
     id: 'ir-sensor',
     name: 'IR Sensor',
-    category: 'control', // Acts as a sensor/control
+    category: 'control',
     description: 'IR Receiver Diode',
     icon: 'ir-sensor',
     terminals: [
