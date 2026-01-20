@@ -4,7 +4,7 @@ import { ReactFlowInstance } from 'reactflow';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Anchor, Compass, Ship, Waves } from 'lucide-react';
 import { useElectricalDiagram } from '@/hooks/useElectricalDiagram';
 import { ComponentSelectionPanel } from '@/components/electrical/ComponentSelectionPanel';
 import { DiagramCanvas } from '@/components/electrical/DiagramCanvas';
@@ -12,7 +12,6 @@ import { Toolbar } from '@/components/electrical/Toolbar';
 import { ConnectionValidationPanel } from '@/components/electrical/ConnectionValidationPanel';
 import { ValidationResultsDialog } from '@/components/electrical/ValidationResultsDialog';
 import { ConnectionTypeDialog } from '@/components/electrical/ConnectionTypeDialog';
-// Wiring explanation removed - using validation panel instead
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ElectricalComponent } from '@/types/electrical';
@@ -144,53 +143,94 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Indian Naval Academy Header */}
-      <header className="flex-shrink-0 shadow-lg">
+      {/* Premium Indian Naval Academy Header */}
+      <header className="flex-shrink-0 relative overflow-hidden">
+        {/* Background with subtle pattern */}
+        <div className="absolute inset-0 navy-pattern opacity-50"></div>
+        
         {/* Main Header */}
-        <div className="bg-gradient-to-b from-[#003366] to-[#002244] px-6 py-2.5">
-          <div className="flex justify-between items-center">
+        <div className="relative bg-gradient-to-b from-[#003366] via-[#002855] to-[#001a33] px-6 py-3">
+          {/* Decorative corners */}
+          <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-[#FFD700]/20 rounded-tl-lg"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 border-r-2 border-t-2 border-[#FFD700]/20 rounded-tr-lg"></div>
+          
+          <div className="flex justify-between items-center relative z-10">
             {/* Left Logo */}
-            <div className="flex-shrink-0 bg-white rounded-full p-1 shadow-md ring-2 ring-[#FFD700]/20">
-              <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-11 w-11 object-contain rounded-full" />
+            <div className="flex-shrink-0 relative">
+              <div className="absolute inset-0 bg-[#FFD700] rounded-full blur-md opacity-20"></div>
+              <div className="relative bg-white rounded-full p-1.5 shadow-lg ring-2 ring-[#FFD700]/40">
+                <img src="/logos/left.jpeg" alt="Indian Navy Logo" className="h-12 w-12 object-contain rounded-full" />
+              </div>
             </div>
 
-            {/* Center - Title and Experiment Name */}
-            <div className="flex-1 flex flex-col items-center justify-center mx-4">
-              <h1 className="text-white text-lg md:text-xl font-bold tracking-[0.2em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
+            {/* Center - Title */}
+            <div className="flex-1 flex flex-col items-center justify-center mx-6">
+              {/* Decorative line */}
+              <div className="flex items-center gap-4 mb-1">
+                <div className="h-px w-16 bg-gradient-to-r from-transparent via-[#FFD700]/50 to-[#FFD700]"></div>
+                <Anchor className="w-4 h-4 text-[#FFD700]/60" />
+                <div className="h-px w-16 bg-gradient-to-l from-transparent via-[#FFD700]/50 to-[#FFD700]"></div>
+              </div>
+              
+              <h1 className="text-white text-xl md:text-2xl font-bold tracking-[0.25em] uppercase drop-shadow-lg" style={{ fontFamily: 'Times New Roman, serif' }}>
                 INDIAN NAVAL ACADEMY
               </h1>
-              <p className="text-[#FFD700] text-[10px] mt-0.5 tracking-[0.2em] uppercase font-medium">Virtual Electrical Lab</p>
+              
+              <p className="text-[#FFD700] text-xs mt-1 tracking-[0.3em] uppercase font-semibold flex items-center gap-2">
+                <Ship className="w-3 h-3" />
+                Virtual Electrical Lab
+                <Compass className="w-3 h-3" />
+              </p>
             </div>
 
             {/* Right Logo */}
-            <div className="flex-shrink-0 bg-white rounded-full p-1 shadow-md ring-2 ring-[#FFD700]/20">
-              <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-11 w-11 object-contain rounded-full" />
+            <div className="flex-shrink-0 relative">
+              <div className="absolute inset-0 bg-[#FFD700] rounded-full blur-md opacity-20"></div>
+              <div className="relative bg-white rounded-full p-1.5 shadow-lg ring-2 ring-[#FFD700]/40">
+                <img src="/logos/right.jpeg" alt="Naval Academy Logo" className="h-12 w-12 object-contain rounded-full" />
+              </div>
             </div>
           </div>
         </div>
-        {/* Gold Accent Border */}
-        <div className="h-1 bg-gradient-to-r from-[#8B6914] via-[#FFD700] to-[#8B6914]"></div>
+        
+        {/* Premium Gold Accent Border */}
+        <div className="gold-accent"></div>
 
         {/* Experiment Name Bar */}
-        <div className="px-4 py-1.5 bg-gradient-to-r from-[#001a33] via-[#002244] to-[#001a33] border-b border-[#FFD700]/10">
-          <div className="flex items-center justify-between gap-3 relative">
+        <div className="relative px-4 py-2 bg-gradient-to-r from-[#001a33] via-[#002244] to-[#001a33]">
+          {/* Subtle wave decoration */}
+          <div className="absolute inset-0 overflow-hidden opacity-5">
+            <Waves className="absolute -left-10 top-0 w-32 h-32 text-[#FFD700]" />
+            <Waves className="absolute -right-10 top-0 w-32 h-32 text-[#FFD700] transform rotate-180" />
+          </div>
+          
+          <div className="flex items-center justify-between gap-3 relative z-10">
             <Button
               variant="ghost"
               size="sm"
-              className="text-[#FFD700] hover:text-white hover:bg-white/10 h-6 px-2 text-xs uppercase tracking-wider absolute left-0"
+              className="text-[#FFD700] hover:text-white hover:bg-white/10 h-7 px-3 text-xs uppercase tracking-wider font-semibold transition-all duration-300"
               onClick={() => window.location.href = '/'}
             >
-              ← Home
+              <Anchor className="w-3 h-3 mr-1.5" />
+              Home
             </Button>
-            <div className="flex items-center justify-center gap-3 w-full">
-              <span className="text-xs font-semibold text-[#FFD700] uppercase tracking-wider">Experiment:</span>
-              <Input
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                className="w-64 h-7 bg-white/95 text-gray-900 border-[#FFD700]/30 text-sm focus:ring-[#FFD700]/50 focus:border-[#FFD700]/50"
-                placeholder="Enter experiment name"
-              />
+            
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#FFD700] uppercase tracking-widest">Experiment:</span>
+                <div className="relative">
+                  <Input
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    className="w-72 h-8 bg-white/95 text-gray-900 border-2 border-[#FFD700]/30 text-sm font-medium focus:ring-2 focus:ring-[#FFD700]/50 focus:border-[#FFD700] rounded-lg pl-3 pr-10"
+                    placeholder="Enter experiment name"
+                  />
+                  <Compass className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#003366]/40" />
+                </div>
+              </div>
             </div>
+            
+            <div className="w-20"></div> {/* Spacer for balance */}
           </div>
         </div>
       </header>
@@ -213,7 +253,8 @@ const Index = () => {
       />
 
       <div className="flex-1 flex overflow-hidden">
-        <div className="w-80 flex-shrink-0 overflow-hidden border-r border-[#003366]/10">
+        {/* Component Selection Panel */}
+        <div className="w-80 flex-shrink-0 overflow-hidden border-r-2 border-[#003366]/10 shadow-lg">
           <ComponentSelectionPanel
             selectedComponents={selectedComponents}
             validationErrors={validationErrors}
@@ -223,23 +264,56 @@ const Index = () => {
           />
         </div>
 
+        {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
-          <div ref={canvasContainerRef} className="flex-1 relative canvas-grid">
+          <div ref={canvasContainerRef} className="flex-1 relative">
             {nodes.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                <div className="text-center p-8 navy-card max-w-md">
-                  <div className="navy-card-header">Getting Started</div>
-                  <div className="p-6">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-b from-[#003366] to-[#001a33] flex items-center justify-center">
-                      <Wand2 className="w-8 h-8 text-[#FFD700]" />
+              <div className="absolute inset-0 flex items-center justify-center navy-gradient-bg navy-pattern">
+                {/* Decorative anchors */}
+                <Anchor className="absolute top-10 left-10 w-16 h-16 text-[#003366]/5 transform -rotate-12" />
+                <Anchor className="absolute bottom-10 right-10 w-20 h-20 text-[#003366]/5 transform rotate-12" />
+                <Ship className="absolute top-1/4 right-20 w-12 h-12 text-[#003366]/3" />
+                <Compass className="absolute bottom-1/4 left-20 w-14 h-14 text-[#003366]/3" />
+                
+                <div className="text-center p-8 navy-card max-w-lg relative">
+                  <div className="navy-card-header">
+                    <Anchor className="w-4 h-4" />
+                    Getting Started
+                  </div>
+                  <div className="p-8">
+                    <div className="relative w-20 h-20 mx-auto mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-b from-[#FFD700]/20 to-transparent rounded-full blur-xl"></div>
+                      <div className="relative w-full h-full rounded-full bg-gradient-to-b from-[#003366] to-[#001a33] flex items-center justify-center shadow-lg ring-2 ring-[#FFD700]/30">
+                        <Wand2 className="w-10 h-10 text-[#FFD700]" />
+                      </div>
                     </div>
-                    <p className="text-[#003366]/70 mb-2">Select components from the left panel to begin building your circuit diagram.</p>
-                    <p className="text-xs text-[#003366]/50">Click on components or drag them onto the canvas</p>
+                    
+                    <h2 className="text-lg font-bold text-[#003366] mb-3">Welcome, Cadet!</h2>
+                    <p className="text-[#003366]/70 mb-4">Select components from the left panel to begin building your circuit diagram.</p>
+                    
+                    <div className="flex items-center justify-center gap-6 text-xs text-[#003366]/50 mt-6">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span>Live</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <span>Neutral</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>Earth</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        <span>DC</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <>
+              <div className="h-full canvas-grid relative">
                 <DiagramCanvas
                   nodes={nodes}
                   edges={edges}
@@ -252,15 +326,40 @@ const Index = () => {
                   onDuplicateComponent={duplicateComponent}
                   isManualMode={isManualMode}
                 />
+                
+                {/* Floating Auto-Wire Button */}
                 {edges.length === 0 && !isManualMode && (
-                  <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-10">
-                    <Button onClick={handleAutoWire} className="navy-btn-gold gap-2 shadow-xl px-6 py-3 text-base animate-pulse">
-                      <Wand2 className="w-5 h-5" />
-                      Auto-Connect Wires
-                    </Button>
+                  <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-[#FFD700] rounded-xl blur-lg opacity-30 animate-pulse"></div>
+                      <Button onClick={handleAutoWire} className="relative navy-btn-gold gap-3 shadow-2xl px-8 py-4 text-base">
+                        <Wand2 className="w-5 h-5" />
+                        Auto-Connect Wires
+                      </Button>
+                    </div>
                   </div>
                 )}
-              </>
+                
+                {/* Wire Legend - Bottom Left */}
+                <div className="absolute bottom-4 left-4 z-10 wire-legend opacity-80 hover:opacity-100 transition-opacity">
+                  <div className="wire-legend-item">
+                    <div className="wire-legend-dot bg-red-500"></div>
+                    <span>Live</span>
+                  </div>
+                  <div className="wire-legend-item">
+                    <div className="wire-legend-dot bg-blue-500"></div>
+                    <span>Neutral</span>
+                  </div>
+                  <div className="wire-legend-item">
+                    <div className="wire-legend-dot bg-green-500"></div>
+                    <span>Earth</span>
+                  </div>
+                  <div className="wire-legend-item">
+                    <div className="wire-legend-dot bg-yellow-500"></div>
+                    <span>DC</span>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

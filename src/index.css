@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Indian Navy Themed Design System */
+/* Indian Navy Themed Design System - Premium Edition */
 @layer base {
   :root {
     /* Navy Blue Theme - Indian Navy */
-    --background: 220 30% 96%;
+    --background: 220 25% 97%;
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -16,12 +16,12 @@
     --popover-foreground: 222 47% 11%;
 
     /* Primary: Navy Blue */
-    --primary: 220 70% 22%;
+    --primary: 220 70% 20%;
     --primary-foreground: 45 93% 85%;
 
     /* Secondary: Light Navy */
-    --secondary: 210 40% 90%;
-    --secondary-foreground: 220 70% 22%;
+    --secondary: 210 40% 92%;
+    --secondary-foreground: 220 70% 20%;
 
     --muted: 210 40% 94%;
     --muted-foreground: 215 16% 47%;
@@ -33,27 +33,27 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 30% 82%;
-    --input: 220 30% 82%;
-    --ring: 220 70% 22%;
+    --border: 220 25% 85%;
+    --input: 220 25% 85%;
+    --ring: 220 70% 20%;
 
     --radius: 0.5rem;
 
     /* Navy styled sidebar */
-    --sidebar-background: 220 70% 18%;
+    --sidebar-background: 220 70% 16%;
     --sidebar-foreground: 45 93% 90%;
     --sidebar-primary: 45 93% 47%;
     --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 220 60% 28%;
+    --sidebar-accent: 220 60% 25%;
     --sidebar-accent-foreground: 45 93% 90%;
-    --sidebar-border: 220 50% 30%;
+    --sidebar-border: 220 50% 28%;
     --sidebar-ring: 45 93% 47%;
 
     /* Wire colors */
     --wire-live: 0 84% 50%;
-    --wire-neutral: 0 0% 15%;
-    --wire-earth: 120 60% 40%;
-    --wire-dc: 220 70% 50%;
+    --wire-neutral: 220 80% 50%;
+    --wire-earth: 142 76% 36%;
+    --wire-dc: 45 93% 47%;
 
     /* Status colors */
     --success: 142 76% 36%;
@@ -61,12 +61,14 @@
     --error: 0 84% 60%;
 
     /* Navy specific */
-    --navy-dark: 220 70% 15%;
-    --navy-medium: 220 70% 22%;
-    --navy-light: 220 50% 35%;
+    --navy-darker: 220 70% 10%;
+    --navy-dark: 220 70% 14%;
+    --navy-medium: 220 70% 20%;
+    --navy-light: 220 50% 32%;
     --gold: 45 93% 47%;
-    --gold-light: 45 93% 70%;
+    --gold-light: 45 93% 65%;
     --gold-dark: 38 80% 35%;
+    --gold-shimmer: 48 100% 55%;
   }
 
   .dark {
@@ -115,45 +117,108 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom scrollbar for the whole page */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(220 25% 94%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(220 70% 25%) 0%, hsl(220 70% 18%) 100%);
+    border-radius: 5px;
+    border: 2px solid hsl(220 25% 94%);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(220 70% 30%) 0%, hsl(220 70% 22%) 100%);
   }
 }
 
 @layer components {
-  /* Navy header styling */
+  /* Premium Navy Header */
   .navy-header {
-    @apply text-primary-foreground;
-    background: linear-gradient(180deg, hsl(220 70% 22%) 0%, hsl(220 70% 15%) 100%);
+    background: linear-gradient(180deg, 
+      hsl(220 70% 22%) 0%, 
+      hsl(220 70% 16%) 50%,
+      hsl(220 70% 12%) 100%
+    );
+    box-shadow: 
+      0 4px 20px hsl(220 70% 10% / 0.4),
+      inset 0 1px 0 hsl(220 50% 35% / 0.3);
   }
 
-  /* Gold accent line */
+  /* Gold shimmer effect */
+  .gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(38 80% 35%) 0%,
+      hsl(45 93% 47%) 25%,
+      hsl(48 100% 60%) 50%,
+      hsl(45 93% 47%) 75%,
+      hsl(38 80% 35%) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 100% 0; }
+    50% { background-position: 0% 0; }
+  }
+
+  /* Gold accent line with shimmer */
   .gold-accent {
-    @apply border-b-2;
-    border-color: hsl(var(--accent));
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      hsl(38 80% 30%) 0%,
+      hsl(45 93% 45%) 15%,
+      hsl(48 100% 60%) 50%,
+      hsl(45 93% 45%) 85%,
+      hsl(38 80% 30%) 100%
+    );
+    box-shadow: 0 2px 8px hsl(45 93% 47% / 0.4);
   }
 
-  /* Navy gradient background */
+  /* Premium gradient background */
   .navy-gradient-bg {
     background: 
-      linear-gradient(135deg, hsl(220 70% 96%) 0%, hsl(220 50% 92%) 50%, hsl(220 40% 95%) 100%);
+      radial-gradient(ellipse at 0% 0%, hsl(220 60% 95%) 0%, transparent 50%),
+      radial-gradient(ellipse at 100% 100%, hsl(45 80% 95%) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(220 30% 97%) 0%, hsl(220 25% 94%) 100%);
   }
 
-  /* Subtle wave pattern overlay */
+  /* Wave pattern for naval theme */
   .navy-pattern {
     background-image: 
-      radial-gradient(circle at 25% 25%, hsl(220 70% 22% / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(45 93% 47% / 0.02) 0%, transparent 50%);
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 30 Q15 20 30 30 T60 30' stroke='%23003366' stroke-opacity='0.03' fill='none' stroke-width='1'/%3E%3C/svg%3E");
+    background-size: 60px 60px;
   }
 
-  /* Component working states */
+  /* Component working states - Enhanced */
   .bulb-glow {
-    filter: drop-shadow(0 0 20px hsl(45 100% 60%)) drop-shadow(0 0 40px hsl(45 100% 50%));
+    filter: drop-shadow(0 0 15px hsl(45 100% 60%)) drop-shadow(0 0 30px hsl(45 100% 50%));
     animation: bulb-pulse 1.5s ease-in-out infinite;
   }
 
   .fan-rotate {
     animation: fan-spin 0.5s linear infinite;
+  }
+
+  .motor-vibrate {
+    animation: motor-vibrate 0.1s linear infinite;
+  }
+
+  .buzzer-pulse {
+    animation: buzzer-pulse 0.3s ease-in-out infinite;
   }
 
   @keyframes bulb-pulse {
@@ -166,139 +231,326 @@
   }
 
   @keyframes fan-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
-  /* Navy card styling */
+  @keyframes motor-vibrate {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+
+  @keyframes buzzer-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* Premium Navy Card */
   .navy-card {
-    @apply bg-card rounded-lg shadow-lg overflow-hidden;
-    border: 2px solid hsl(220 70% 22% / 0.15);
+    @apply bg-card rounded-xl overflow-hidden;
+    border: 1px solid hsl(220 30% 88%);
     box-shadow: 
-      0 4px 6px -1px hsl(220 70% 22% / 0.1),
-      0 2px 4px -2px hsl(220 70% 22% / 0.1);
+      0 4px 6px -1px hsl(220 70% 20% / 0.08),
+      0 2px 4px -2px hsl(220 70% 20% / 0.06),
+      0 0 0 1px hsl(220 70% 20% / 0.02);
+    transition: all 0.3s ease;
+  }
+
+  .navy-card:hover {
+    box-shadow: 
+      0 10px 25px -5px hsl(220 70% 20% / 0.12),
+      0 8px 10px -6px hsl(220 70% 20% / 0.08),
+      0 0 0 1px hsl(220 70% 20% / 0.04);
+    transform: translateY(-2px);
   }
 
   .navy-card-header {
-    @apply px-4 py-2 font-semibold text-sm uppercase tracking-wider;
-    background: linear-gradient(180deg, hsl(220 70% 22%) 0%, hsl(220 70% 18%) 100%);
+    @apply px-5 py-3 font-semibold text-sm uppercase tracking-widest flex items-center gap-2;
+    background: linear-gradient(180deg, hsl(220 70% 20%) 0%, hsl(220 70% 14%) 100%);
     color: hsl(45 93% 85%);
     border-bottom: 2px solid hsl(45 93% 47%);
+    text-shadow: 0 1px 2px hsl(220 70% 10% / 0.5);
   }
 
-  /* Panel styling */
+  /* Premium Panel */
   .navy-panel {
-    @apply backdrop-blur-sm rounded-lg shadow-md overflow-hidden;
-    background: hsl(var(--card) / 0.98);
-    border: 1px solid hsl(220 70% 22% / 0.2);
+    @apply rounded-xl overflow-hidden;
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 25% 98%) 100%);
+    border: 1px solid hsl(220 30% 88%);
+    box-shadow: 
+      0 4px 15px hsl(220 70% 20% / 0.08),
+      inset 0 1px 0 hsl(0 0% 100%);
   }
 
   .navy-panel-header {
-    @apply px-4 py-3 font-bold text-sm uppercase tracking-wider;
-    background: linear-gradient(180deg, hsl(220 70% 20%) 0%, hsl(220 70% 16%) 100%);
+    @apply px-4 py-3.5 font-bold text-sm uppercase tracking-widest flex items-center gap-3;
+    background: linear-gradient(180deg, hsl(220 70% 18%) 0%, hsl(220 70% 12%) 100%);
     color: hsl(45 93% 85%);
-    border-bottom: 2px solid hsl(45 93% 47%);
+    border-bottom: 3px solid hsl(45 93% 47%);
+    text-shadow: 0 1px 2px hsl(220 70% 8% / 0.5);
   }
 
-  /* Navy button styles */
+  /* Premium Navy Buttons */
   .navy-btn {
-    @apply font-semibold uppercase tracking-wide text-sm transition-all duration-200;
-    background: linear-gradient(180deg, hsl(220 70% 25%) 0%, hsl(220 70% 18%) 100%);
-    color: hsl(45 93% 85%);
-    border: 1px solid hsl(220 50% 35%);
-    box-shadow: 0 2px 4px hsl(220 70% 15% / 0.3);
+    @apply font-semibold uppercase tracking-wide text-sm transition-all duration-300 rounded-lg px-4 py-2;
+    background: linear-gradient(180deg, hsl(220 70% 24%) 0%, hsl(220 70% 16%) 100%);
+    color: hsl(45 93% 88%);
+    border: 1px solid hsl(220 50% 32%);
+    box-shadow: 
+      0 2px 4px hsl(220 70% 10% / 0.3),
+      inset 0 1px 0 hsl(220 50% 40% / 0.3);
+    text-shadow: 0 1px 2px hsl(220 70% 8%);
   }
 
   .navy-btn:hover {
-    background: linear-gradient(180deg, hsl(220 70% 30%) 0%, hsl(220 70% 22%) 100%);
-    box-shadow: 0 4px 8px hsl(220 70% 15% / 0.4);
+    background: linear-gradient(180deg, hsl(220 70% 28%) 0%, hsl(220 70% 20%) 100%);
+    box-shadow: 
+      0 4px 12px hsl(220 70% 10% / 0.4),
+      inset 0 1px 0 hsl(220 50% 45% / 0.3);
     transform: translateY(-1px);
+  }
+
+  .navy-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px hsl(220 70% 10% / 0.3);
   }
 
   .navy-btn-gold {
-    @apply font-bold uppercase tracking-wide text-sm transition-all duration-200;
-    background: linear-gradient(180deg, hsl(45 93% 50%) 0%, hsl(38 80% 40%) 100%);
-    color: hsl(220 70% 12%);
+    @apply font-bold uppercase tracking-wide text-sm transition-all duration-300 rounded-lg px-4 py-2;
+    background: linear-gradient(180deg, hsl(48 100% 55%) 0%, hsl(45 93% 47%) 50%, hsl(38 80% 38%) 100%);
+    color: hsl(220 70% 10%);
     border: 1px solid hsl(38 80% 35%);
-    box-shadow: 0 2px 4px hsl(38 80% 25% / 0.3);
+    box-shadow: 
+      0 2px 4px hsl(38 80% 25% / 0.3),
+      inset 0 1px 0 hsl(48 100% 70% / 0.5);
+    text-shadow: 0 1px 0 hsl(48 100% 70% / 0.3);
   }
 
   .navy-btn-gold:hover {
-    background: linear-gradient(180deg, hsl(45 93% 55%) 0%, hsl(38 80% 45%) 100%);
-    box-shadow: 0 4px 8px hsl(38 80% 25% / 0.4);
+    background: linear-gradient(180deg, hsl(48 100% 60%) 0%, hsl(45 93% 52%) 50%, hsl(38 80% 42%) 100%);
+    box-shadow: 
+      0 4px 12px hsl(45 93% 47% / 0.4),
+      inset 0 1px 0 hsl(48 100% 75% / 0.5);
+    transform: translateY(-2px);
+  }
+
+  .navy-btn-gold:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px hsl(38 80% 25% / 0.3);
+  }
+
+  /* Navy Button Outline */
+  .navy-btn-outline {
+    @apply font-semibold uppercase tracking-wide text-sm transition-all duration-300 rounded-lg px-4 py-2;
+    background: transparent;
+    color: hsl(220 70% 20%);
+    border: 2px solid hsl(220 70% 20%);
+    box-shadow: none;
+  }
+
+  .navy-btn-outline:hover {
+    background: hsl(220 70% 20%);
+    color: hsl(45 93% 85%);
+    box-shadow: 0 4px 12px hsl(220 70% 10% / 0.2);
     transform: translateY(-1px);
   }
 
-  /* Anchor decoration */
+  /* Anchor decoration - Enhanced */
   .anchor-watermark {
     position: absolute;
-    opacity: 0.03;
+    opacity: 0.02;
     pointer-events: none;
     z-index: 0;
+    filter: grayscale(100%);
   }
 
-  /* Gold divider */
+  /* Premium Gold Divider */
   .gold-divider {
-    height: 2px;
-    background: linear-gradient(90deg, transparent 0%, hsl(45 93% 47%) 20%, hsl(45 93% 60%) 50%, hsl(45 93% 47%) 80%, transparent 100%);
+    height: 3px;
+    background: linear-gradient(
+      90deg, 
+      transparent 0%, 
+      hsl(38 80% 35%) 10%,
+      hsl(45 93% 47%) 30%, 
+      hsl(48 100% 60%) 50%, 
+      hsl(45 93% 47%) 70%, 
+      hsl(38 80% 35%) 90%,
+      transparent 100%
+    );
+    box-shadow: 0 2px 8px hsl(45 93% 47% / 0.3);
   }
 
-  /* Status badge styling */
+  /* Premium Status Badges */
   .navy-badge {
-    @apply px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide;
-    background: hsl(220 70% 22%);
-    color: hsl(45 93% 85%);
-    border: 1px solid hsl(45 93% 47% / 0.3);
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+    background: linear-gradient(180deg, hsl(220 70% 22%) 0%, hsl(220 70% 16%) 100%);
+    color: hsl(45 93% 88%);
+    border: 1px solid hsl(220 50% 30%);
+    box-shadow: 0 2px 4px hsl(220 70% 10% / 0.2);
   }
 
   .navy-badge-gold {
-    @apply px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide;
-    background: linear-gradient(180deg, hsl(45 93% 50%) 0%, hsl(38 80% 40%) 100%);
-    color: hsl(220 70% 12%);
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+    background: linear-gradient(180deg, hsl(48 100% 55%) 0%, hsl(38 80% 40%) 100%);
+    color: hsl(220 70% 10%);
+    border: 1px solid hsl(38 80% 35%);
+    box-shadow: 0 2px 4px hsl(45 93% 47% / 0.3);
   }
 
-  /* Scrollbar styling */
+  .navy-badge-success {
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+    background: linear-gradient(180deg, hsl(142 76% 42%) 0%, hsl(142 76% 32%) 100%);
+    color: white;
+    border: 1px solid hsl(142 76% 28%);
+  }
+
+  .navy-badge-error {
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+    background: linear-gradient(180deg, hsl(0 84% 60%) 0%, hsl(0 84% 50%) 100%);
+    color: white;
+    border: 1px solid hsl(0 84% 45%);
+  }
+
+  /* Custom Scrollbar for panels */
   .navy-scrollbar::-webkit-scrollbar {
     width: 8px;
   }
 
   .navy-scrollbar::-webkit-scrollbar-track {
-    background: hsl(220 30% 92%);
+    background: hsl(220 25% 94%);
     border-radius: 4px;
   }
 
   .navy-scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(220 70% 22% / 0.3);
+    background: linear-gradient(180deg, hsl(220 70% 28%) 0%, hsl(220 70% 18%) 100%);
     border-radius: 4px;
+    border: 1px solid hsl(220 25% 94%);
   }
 
   .navy-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(220 70% 22% / 0.5);
+    background: linear-gradient(180deg, hsl(220 70% 32%) 0%, hsl(220 70% 22%) 100%);
   }
 
-  /* Canvas grid pattern */
+  /* Premium Canvas Grid */
   .canvas-grid {
+    background-color: hsl(220 25% 97%);
     background-image: 
-      linear-gradient(hsl(220 70% 22% / 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(220 70% 22% / 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
+      linear-gradient(hsl(220 70% 20% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(220 70% 20% / 0.04) 1px, transparent 1px),
+      linear-gradient(hsl(220 70% 20% / 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(220 70% 20% / 0.02) 1px, transparent 1px);
+    background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+    background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
   }
 
-  /* Rope border effect */
+  /* Component Card in Panel */
+  .component-card {
+    @apply rounded-lg p-3 transition-all duration-300 cursor-pointer;
+    background: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 25% 98%) 100%);
+    border: 1px solid hsl(220 25% 88%);
+    box-shadow: 0 1px 3px hsl(220 70% 20% / 0.05);
+  }
+
+  .component-card:hover {
+    border-color: hsl(220 70% 20% / 0.3);
+    box-shadow: 
+      0 4px 12px hsl(220 70% 20% / 0.1),
+      0 0 0 2px hsl(45 93% 47% / 0.1);
+    transform: translateY(-1px);
+  }
+
+  .component-card.selected {
+    border-color: hsl(45 93% 47%);
+    background: linear-gradient(180deg, hsl(45 93% 97%) 0%, hsl(45 80% 94%) 100%);
+    box-shadow: 
+      0 4px 12px hsl(45 93% 47% / 0.2),
+      0 0 0 2px hsl(45 93% 47% / 0.3);
+  }
+
+  /* Terminal badges */
+  .terminal-badge {
+    @apply px-1.5 py-0.5 rounded text-[10px] font-bold uppercase;
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.15);
+  }
+
+  /* Rope border effect - Enhanced */
   .rope-border {
-    border: 3px solid transparent;
+    border: 4px solid transparent;
     background: 
       linear-gradient(white, white) padding-box,
       repeating-linear-gradient(
         45deg,
-        hsl(38 80% 40%) 0px,
-        hsl(38 80% 40%) 5px,
-        hsl(45 93% 55%) 5px,
-        hsl(45 93% 55%) 10px
+        hsl(38 80% 35%) 0px,
+        hsl(38 80% 35%) 4px,
+        hsl(45 93% 55%) 4px,
+        hsl(45 93% 55%) 8px,
+        hsl(38 80% 35%) 8px,
+        hsl(38 80% 35%) 12px
       ) border-box;
   }
+
+  /* Floating Action Area */
+  .floating-action {
+    @apply fixed bottom-6 right-6 z-50;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  /* Wire legend styling */
+  .wire-legend {
+    @apply flex gap-4 p-3 rounded-lg;
+    background: hsl(220 25% 96%);
+    border: 1px solid hsl(220 25% 88%);
+  }
+
+  .wire-legend-item {
+    @apply flex items-center gap-2 text-xs font-medium;
+  }
+
+  .wire-legend-dot {
+    @apply w-3 h-3 rounded-full;
+    box-shadow: 0 0 4px currentColor;
+  }
+
+  /* Category divider */
+  .category-divider {
+    @apply flex items-center gap-3 py-2;
+  }
+
+  .category-divider::before,
+  .category-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, hsl(220 70% 20% / 0.2), transparent);
+  }
+
+  /* Info tooltip */
+  .navy-tooltip {
+    @apply px-3 py-2 rounded-lg text-sm;
+    background: hsl(220 70% 16%);
+    color: hsl(45 93% 88%);
+    border: 1px solid hsl(45 93% 47% / 0.3);
+    box-shadow: 0 4px 12px hsl(220 70% 10% / 0.3);
+  }
+
+  /* Status indicator */
+  .status-indicator {
+    @apply w-2 h-2 rounded-full;
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+    50% { box-shadow: 0 0 8px 2px currentColor; }
+  }
+
+  .status-indicator.success { @apply bg-green-500; }
+  .status-indicator.warning { @apply bg-yellow-500; }
+  .status-indicator.error { @apply bg-red-500; }
 }
